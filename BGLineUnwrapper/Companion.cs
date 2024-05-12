@@ -11,9 +11,10 @@
 		#endregion
 
 		#region Constructors
-		public Companion(IReadOnlyList<string> lines)
+		public Companion(IEnumerable<string> lines)
 		{
-			var stats = StatParser.Match(lines[0]);
+			var list = new List<string>(lines);
+			var stats = StatParser.Match(list[0]);
 			if (!stats.Success)
 			{
 				throw new InvalidOperationException("Invalid stats line!");
@@ -30,10 +31,10 @@
 			this.Class = stats.Groups["class"].Value;
 			this.Alignment = stats.Groups["align"].Value;
 
-			var lastLine = lines.Count - 1;
-			if (lines[lastLine].StartsWith("Where ", StringComparison.Ordinal))
+			var lastLine = list.Count - 1;
+			if (list[lastLine].StartsWith("Where ", StringComparison.Ordinal))
 			{
-				var match = Common.LocFinder.Match(lines[lastLine]);
+				var match = Common.LocFinder.Match(list[lastLine]);
 				if (match.Success)
 				{
 					this.Location = match.Groups["loc"].Value;
@@ -47,7 +48,7 @@
 				var text = string.Empty;
 				for (var i = 1; i <= lastLine; i++)
 				{
-					text += " " + lines[i];
+					text += " " + list[i];
 				}
 
 				text = text.Substring(1);
@@ -65,13 +66,13 @@
 
 		public string Constitution { get; }
 
-		public string Description { get; }
+		public string? Description { get; }
 
 		public string Dexterity { get; }
 
 		public string Intelligence { get; }
 
-		public string Location { get; }
+		public string? Location { get; }
 
 		public string Name { get; }
 

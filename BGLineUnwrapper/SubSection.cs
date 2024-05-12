@@ -6,26 +6,58 @@
 
 	public class Subsection
 	{
-		public Subsection(IEnumerable<Line> lines)
+		#region Constructors
+		public Subsection(Line? title, IList<Line> lines)
 		{
-			foreach (var line in lines)
-			{
-				if (line.Type == LineType.Title)
-				{
-					this.Title = line;
-				}
-				else
-				{
-					this.Lines.Add(line);
-				}
-			}
+			this.Title = title;
+			this.Lines = lines;
 		}
 
-		public IList<Line> Lines { get; } = new List<Line>();
+		public Subsection(IList<Line> lines, bool checkForTitle)
+		{
+			if (checkForTitle)
+			{
+				this.Lines = new List<Line>();
+				foreach (var line in lines)
+				{
+					if (line.Type == LineType.Title)
+					{
+						this.Title = line;
+					}
+					else
+					{
+						this.Lines.Add(line);
+					}
+				}
+			}
+			else
+			{
+				this.Lines = new List<Line>(lines);
+			}
+		}
+		#endregion
 
-		public Line Title { get; set; }
+		#region Public Properties
+		public IList<Line> Lines { get; }
 
-		public void ReparseLocations()
+		public Line? Title { get; set; }
+		#endregion
+
+		#region Public Methods
+		public void TrimAreaName(string areaName)
+		{
+			this.Title?.TrimAreaName(areaName);
+			foreach (var line in this.Lines)
+			{
+				line.TrimAreaName(areaName);
+			}
+
+			this.ReparseLocations();
+		}
+		#endregion
+
+		#region Private Methods
+		private void ReparseLocations()
 		{
 			if (this.Lines.Count == 0)
 			{
@@ -33,63 +65,55 @@
 			}
 
 			var lineNum = this.Lines.Count - 1;
-			var searchLine = this.Lines[lineNum];
-			while (searchLine.Type == LineType.Colon)
+			while (lineNum > -1 && this.Lines[lineNum] is var searchLine && searchLine.Type == LineType.Colon)
 			{
-				if (searchLine.Text.StartsWith("[", StringComparison.Ordinal) && searchLine.Text.EndsWith("]", StringComparison.Ordinal))
+				var replaced = false;
+				foreach (var line in this.Lines)
 				{
-					foreach (var line in this.Lines)
+					if (line.Type == LineType.Plain && this.MoveLocation(line, lineNum, searchLine))
 					{
-						if (line.Type == LineType.Plain)
-						{
-							var index = line.Text.IndexOf(searchLine.Prefix, StringComparison.OrdinalIgnoreCase);
-							if (index > -1)
-							{
-								line.Text = line.Text.Insert(index + searchLine.Prefix.Length, searchLine.Text);
-								this.Lines.RemoveAt(lineNum);
-								break;
-							}
-						}
+						replaced = true;
+						break;
 					}
 				}
 
+				if (!replaced)
+				{
+					// Try replacing in title as a last resort if not replaced in text. Output was too messy when replacing in title first.
+					this.MoveLocation(this.Title, lineNum, searchLine);
+				}
+
 				lineNum--;
-				if (lineNum < 0)
-				{
-					break;
-				}
-
-				searchLine = this.Lines[lineNum];
-			}
-
-			foreach (var line in this.Lines)
-			{
-				if (line.Type == LineType.Colon)
-				{
-					Debug.WriteLine(line);
-				}
 			}
 		}
 
-		public void TrimAreaName(string areaName)
+		private bool MoveLocation(Line? line, int lineNum, Line searchLine)
 		{
-			this.Title.TrimAreaName(areaName);
-			foreach (var line in this.Lines)
+			if (line != null && searchLine.Prefix != null)
 			{
-				line.TrimAreaName(areaName);
-			}
-		}
+				var index = line.Text.IndexOf(searchLine.Prefix, StringComparison.OrdinalIgnoreCase);
+				if (index > -1)
+				{
+					index += searchLine.Prefix.Length;
+					while (index < line.Text.Length && " \n".IndexOf(line.Text[index]) == -1)
+					{
+						index++;
+					}
 
-		/*
-		public IEnumerator<Line> GetEnumerator()
-		{
-			yield return this.Title;
-			foreach (var line in this.Lines)
-			{
-				yield return line;
+					var insertText = searchLine.Text
+						.Replace("[", " ")
+						.Replace("  ", " ")
+						.Replace("]", string.Empty)
+						.Trim();
+					insertText = '[' + insertText + ']';
+					line.Text = line.Text.Insert(index, insertText);
+					this.Lines.RemoveAt(lineNum);
+					return true;
+				}
 			}
-		}
 
-		IEnumerator IEnumerable.GetEnumerator() => throw new System.NotImplementedException(); */
+			return false;
+		}
+		#endregion
 	}
 }

@@ -9,6 +9,26 @@
 
 	internal static class Program
 	{
+		#region Public Methods
+		public static void Main(string[] args)
+		{
+			var filename = args.Length > 0 ? args[0] : @"D:\Users\rmorl\Documents\Games\Baldur's Gate\BG Walkthrough.txt";
+			var option = args.Length > 1 ? args[1] : "BG1";
+			var text = File.ReadAllText(filename, Encoding.UTF8); // Encoding.GetEncoding(1252)
+			var parsedFile = option switch
+			{
+				"BG1" => ConvertBG1(text),
+				_ => throw new InvalidOperationException()
+			};
+
+			var doWord = true;
+			using var writer = File.CreateText(@"D:\Output." + (doWord ? "xml" : "htm"));
+			var saver = doWord ? (SaveAs)new SaveAsWordML(writer) : new SaveAsHtml(writer);
+			saver.Save(parsedFile);
+		}
+		#endregion
+
+		#region Private Methods
 		private static IEnumerable<Section> ConvertBG1(string text)
 		{
 			var newText = new List<Section>();
@@ -57,22 +77,6 @@
 
 			return string.Join("\n", lines);
 		}
-
-		public static void Main(string[] args)
-		{
-			var filename = args.Length > 0 ? args[0] : @"D:\Users\rmorl\Documents\Games\Baldur's Gate\BG Walkthrough.txt";
-			var option = args.Length > 1 ? args[1] : "BG1";
-			var text = File.ReadAllText(filename, Encoding.UTF8); // Encoding.GetEncoding(1252)
-			IEnumerable<Section> parsedFile = null;
-			if (option == "BG1")
-			{
-				parsedFile = ConvertBG1(text);
-			}
-
-			var doWord = true;
-			using var writer = File.CreateText(@"D:\Output." + (doWord ? "xml" : "htm"));
-			var saver = doWord ? (SaveAs)new SaveAsWordML(writer) : new SaveAsHtml(writer);
-			saver.Save(parsedFile);
-		}
+		#endregion
 	}
 }

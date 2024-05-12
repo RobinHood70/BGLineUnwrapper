@@ -42,7 +42,7 @@
 				.SelfClosingTag("ilvl", ("val", "0"))
 				.SelfClosingTag("ilfo", ("val", "1"))
 				.CloseTags(2);
-			this.WriteStylizedText(GetParagraph(text));
+			this.WriteStylizedText(StylizeLocations(text));
 			this.htmlWriter.CloseTag();
 		}
 
@@ -50,16 +50,7 @@
 		{
 		}
 
-		protected override void WriteHeader(int level, Paragraph paragraph)
-		{
-			if (paragraph.Style != null)
-			{
-				throw new InvalidOperationException();
-			}
-
-			paragraph.Style = "heading" + level.ToString();
-			this.WriteParagraph(paragraph);
-		}
+		protected override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteParagraph(new Paragraph($"heading{level}", text));
 
 		protected override void WriteParagraph(Paragraph paragraph)
 		{
@@ -76,7 +67,7 @@
 			this.htmlWriter.CloseTag();
 		}
 
-		protected override void WriteStylizedText(string style, string text)
+		protected override void WriteStylizedText(string? style, string text)
 		{
 			if (string.IsNullOrEmpty(text))
 			{
@@ -102,7 +93,7 @@
 				.CloseTag();
 		}
 
-		protected override void WriteTableCell(string style, int mergeCount, IEnumerable<Paragraph> paragraphs)
+		protected override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
 		{
 			this.htmlWriter.OpenTag("tc");
 			if (mergeCount > 1)
@@ -319,7 +310,7 @@
 			.CloseTags(2)
 
 			.OpenTag("style", ("type", "paragraph"), ("styleId", "note"))
-			.SelfClosingTag("name", ("val", "Tip"))
+			.SelfClosingTag("name", ("val", "Note"))
 			.SelfClosingTag("basedOn", ("val", "Normal"))
 			.OpenTag("pPr")
 			.OpenTag("pBdr")
@@ -391,38 +382,6 @@
 			.OpenTag("tblCellMar")
 			.SelfClosingTag("left", ("w", this.FontToTwips(0.1)), ("type", "dxa"))
 			.SelfClosingTag("right", ("w", this.FontToTwips(0.1)), ("type", "dxa"))
-			.CloseTags(2)
-			.OpenTag("trPr")
-			.SelfClosingTag("cantSplit")
-			.CloseTag()
-			.OpenTag("tblStylePr", ("type", "firstRow"))
-			.OpenTag("pPr")
-			.SelfClosingTag("jc", ("val", "center"))
-			.CloseTag()
-			.OpenTag("rPr")
-			.SelfClosingTag("b")
-			.SelfClosingTag("color", ("val", "FFFFFF"))
-			.CloseTag()
-			.OpenTag("tcPr")
-			.SelfClosingTag("shd", ("val", "clear"), ("color", "auto"), ("fill", "4472C4"))
-			.CloseTags(2)
-			.OpenTag("tblStylePr", ("type", "band2Horz"))
-			.OpenTag("tcPr")
-			.SelfClosingTag("shd", ("val", "clear"), ("color", "auto"), ("fill", "D9E2F3"))
-			.CloseTags(3)
-
-			.OpenTag("style", ("type", "table"), ("styleId", "treasure"))
-			.SelfClosingTag("name", ("val", "Companions"))
-			.SelfClosingTag("basedOn", ("val", "TableNormal"))
-			.OpenTag("rPr")
-			.SelfClosingTag("rfonts", ("ascii", this.BaseFont), ("h-ansi", this.BaseFont))
-			.SelfClosingTag("wx:font", ("wx:val", this.BaseFont))
-			.CloseTag()
-			.OpenTag("tblPr")
-			.SelfClosingTag("tblStyleRowBandSize", ("val", "1"))
-			.OpenTag("tblCellMar")
-			.SelfClosingTag("left", ("w", this.FontToTwips(0.25)), ("type", "dxa"))
-			.SelfClosingTag("right", ("w", this.FontToTwips(0.25)), ("type", "dxa"))
 			.CloseTags(2)
 			.OpenTag("trPr")
 			.SelfClosingTag("cantSplit")

@@ -36,7 +36,7 @@
 		#endregion
 
 		#region Public Properties
-		public string DefaultNamespace { get; set; }
+		public string? DefaultNamespace { get; set; }
 		#endregion
 
 		#region Public Methods
@@ -75,24 +75,24 @@
 			return this;
 		}
 
-		public HtmlWriter OpenTag(string name, params (string Key, string Value)[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, attributes);
+		public HtmlWriter OpenTag(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, attributes);
 
-		public HtmlWriter OpenTagInline(string name, params (string Key, string Value)[] attributes) => this.FullTag(name, TagProperties.None, attributes);
+		public HtmlWriter OpenTagInline(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.None, attributes);
 
-		public HtmlWriter OpenTextTag(string name, params (string Key, string Value)[] attributes) => this.FullTag(name, TagProperties.Indent, attributes);
+		public HtmlWriter OpenTextTag(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.Indent, attributes);
 
-		public HtmlWriter OpenTextTag(string name, IEnumerable<(string Key, string Value)> attributes) => this.FullTag(name, TagProperties.Indent, attributes);
+		public HtmlWriter OpenTextTag(string name, IEnumerable<(string? Key, string? Value)> attributes) => this.FullTag(name, TagProperties.Indent, attributes);
 
-		public HtmlWriter SelfClosingTagInline(string name, params (string Key, string Value)[] attributes) => this.FullTag(name, TagProperties.SelfClose, attributes);
+		public HtmlWriter SelfClosingTagInline(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.SelfClose, attributes);
 
-		public HtmlWriter SelfClosingTag(string name, params (string Key, string Value)[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, attributes);
+		public HtmlWriter SelfClosingTag(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, attributes);
 
-		public HtmlWriter TextTag(string name, string content, params (string Key, string Value)[] attributes) => this
+		public HtmlWriter TextTag(string name, string content, params (string? Key, string? Value)[] attributes) => this
 			.OpenTextTag(name, attributes)
 			.WriteText(content)
 			.CloseTag();
 
-		public HtmlWriter TextTagInline(string name, string content, params (string Key, string Value)[] attributes) => this
+		public HtmlWriter TextTagInline(string name, string content, params (string? Key, string? Value)[] attributes) => this
 			.OpenTagInline(name, attributes)
 			.WriteText(content)
 			.CloseTag();
@@ -129,7 +129,7 @@
 
 		public HtmlWriter WriteLine() => this.WriteLine(null);
 
-		public HtmlWriter WriteLine(string text)
+		public HtmlWriter WriteLine(string? text)
 		{
 			this.writer.WriteLine(text);
 			this.atStartOfLine = true;
@@ -145,7 +145,7 @@
 			(this.DefaultNamespace == null || text.Contains(":")) ? text :
 			this.DefaultNamespace + ':' + text;
 
-		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<(string, string)> attributes)
+		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<(string? Key, string? Value)> attributes)
 		{
 			var hierarchical = false;
 			if (props.HasFlag(TagProperties.Indent))

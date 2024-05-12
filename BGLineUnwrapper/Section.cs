@@ -2,7 +2,6 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Diagnostics;
 	using System.Text.RegularExpressions;
 
 	public class Section
@@ -12,17 +11,24 @@
 		public const string EntryDelimiter = "\n  - ";
 		#endregion
 
-		#region Fields
+		#region Static Fields
+		private static readonly char[] Colon = new char[] { ':' };
 		private static readonly Regex SubsectionFinder = new Regex(@"\n+(?<subsection>[^ \n][^:\n]*?):", RegexOptions.Singleline);
 		private static readonly Regex PlainTextFinder = new Regex(@"(?<title>[^\n]*)\n-+\n", RegexOptions.Singleline);
-		private static readonly Regex OldLocFinder = new Regex(@"(\s+at)?\s*(\(x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))");
+		private static readonly Regex OldLocFinder = new Regex(@",?(\s+at)?\s*(\(x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))(?<punc>[\p{P}]*)");
 		private static readonly Regex AreaFinder = new Regex(@"\((?<area>([A-Z]{2}\d{4},? ?)+)\)");
+		private static readonly (string Search, int Offset, LineType LineType)[] SearchStrings = new[]
+		{
+			(":[", 1, LineType.Colon),
+			(": ", 2, LineType.Colon),
+			("--", 2, LineType.Dashed)
+		};
 		#endregion
 
 		#region Constructors
 		public Section(string sectionText)
 		{
-			sectionText = OldLocFinder.Replace(sectionText, "[${x}.${y}]").Replace(", [", " [");
+			sectionText = OldLocFinder.Replace(sectionText, "${punc}[${x}.${y}]");
 			var split = sectionText.Split(new[] { Divider }, StringSplitOptions.None);
 			if (split.Length != 2)
 			{
@@ -35,7 +41,7 @@
 			if (sectionNum == -1)
 			{
 				this.Title = titleText.Trim();
-				this.PlainText = ParsePlainText(bodyText);
+				this.PlainText = new List<Subsection>(ParsePlainText(bodyText));
 
 				return;
 			}
@@ -70,27 +76,65 @@
 					case "Assassination Attempt":
 					case "Assassination Attempts":
 					case "Enemy Wizards":
-						this.Assassinations = new List<Subsection>(ParseTitledSubsection(subbodyText, titleTrimmed));
+						if (this.Assassinations != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						this.Assassinations = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
 						break;
 					case "Companions":
-						this.ParseCompanions(subbodyText);
+						if (this.Companions != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						this.Companions = new List<Companion>(ParseCompanions(subbodyText));
 						break;
 					case "Enemies":
-						this.Enemies = ParseEnemies(subbodyText);
+						if (this.Enemies != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						var enemies = new List<string>(ParseEnemies(subbodyText));
+						enemies.Sort();
+						this.Enemies = enemies;
 						break;
 					case "Note":
-						this.Notes = new List<Line>(WrappedLines(TrimStart(subbodyText), LineType.Note));
+						if (this.Notes != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						this.Notes = new Subsection(WrappedLines(TrimStart(subbodyText), LineType.Note), false);
 						break;
 					case "Other":
-						this.Other = new List<Subsection>(ParseTitledSubsection(subbodyText, titleTrimmed));
+						if (this.Other != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						this.Other = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
 						break;
 					case "Plot":
-						this.Plot = ParsePlot(subbodyText, titleTrimmed);
+						if (this.Plot != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						this.Plot = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Plain));
 						break;
 					case "Subquests":
-						this.Subquests = new List<Subsection>(ParseTitledSubsection(subbodyText, titleTrimmed));
+						if (this.Subquests != null)
+						{
+							throw new InvalidOperationException("Duplicate entry.");
+						}
+
+						this.Subquests = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
 						break;
 					case "Treasures":
+						// This one's the exception to the rule. Just due to the dictionary structure, it's initialized with the class and able to handle multiple entries in different areas of the section (not that that should occur).
 						this.ParseTreasures(subbodyText);
 						break;
 					default:
@@ -101,23 +145,23 @@
 		#endregion
 
 		#region Public Properties
-		public string Area { get; }
+		public string? Area { get; }
 
-		public IList<Subsection> Assassinations { get; } = new List<Subsection>();
+		public IList<Subsection> Assassinations { get; }
 
-		public IList<Companion> Companions { get; } = new List<Companion>();
+		public IList<Companion> Companions { get; }
 
-		public IList<string> Enemies { get; }
+		public IList<string>? Enemies { get; }
 
-		public IList<Line> Notes { get; }
+		public Subsection? Notes { get; }
 
-		public IList<Subsection> Other { get; }
+		public IList<Subsection>? Other { get; }
 
-		public IList<Line> PlainText { get; }
+		public IList<Subsection>? PlainText { get; }
 
-		public IList<Line> Plot { get; }
+		public IList<Subsection>? Plot { get; }
 
-		public IList<Subsection> Subquests { get; }
+		public IList<Subsection>? Subquests { get; }
 
 		public string Title { get; }
 
@@ -131,6 +175,49 @@
 		#region Private Static Methods
 		private static IEnumerable<Line> GetLineTypes(List<string> lines, LineType preferredType)
 		{
+			// Checks if line text looks valid. Rejects it if prefix is abnormally long or contains a period. Skips check if the new text contains a '[', suggesting that it's a line with a location attached.
+			static Line? CheckValidLine(LineType lineType, string prefix, string newText)
+			{
+				if (prefix.Contains('.'))
+				{
+					// Debug.WriteLine("Excluded for period: " + prefix);
+					return null;
+				}
+
+				var wordCount = prefix.Split(' ').Length;
+				if (wordCount > 4)
+				{
+					// Debug.WriteLine("Excluded for word count: " + prefix);
+					return null;
+				}
+
+				switch (prefix)
+				{
+					case "Note":
+						lineType = LineType.Note;
+						break;
+					case "Tip":
+						lineType = LineType.Tip;
+						break;
+				}
+
+				if (lineType == LineType.Colon)
+				{
+					if (!newText.Contains('['))
+					{
+						// Debug.WriteLine("Excluded for no location: " + newText);
+						return null;
+					}
+
+					if (newText.EndsWith("].", StringComparison.Ordinal))
+					{
+						newText = newText[0..^1];
+					}
+				}
+
+				return new Line(lineType, prefix, newText);
+			}
+
 			if (lines.Count == 0)
 			{
 				yield break;
@@ -138,49 +225,54 @@
 
 			var endLines = new Stack<Line>();
 			var singleLines = lines.Count - 1;
-			LineType lineType;
+			Line? line;
 			do
 			{
-				lineType = preferredType;
+				line = null;
 				var text = lines[singleLines];
-				var specialOffset = text.IndexOf(':');
-				if (specialOffset >= 0 && specialOffset < (text.Length - 1) && (text[specialOffset + 1] == ' ' || text[specialOffset + 1] == '['))
+				if (char.IsLower(text[0]))
 				{
-					lineType = LineType.Colon;
-				}
-				else
-				{
-					specialOffset = text.IndexOf("--", StringComparison.Ordinal);
-					if (specialOffset >= 0)
-					{
-						lineType = LineType.Dashed;
-					}
+					// If text starts with a lower-case letter, assume it's part of the previous line.
+					continue;
 				}
 
-				if (lineType != preferredType)
+				foreach (var entry in SearchStrings)
 				{
-					var prefix = text.Substring(0, specialOffset);
-					if (text.IndexOf('[', specialOffset) == -1)
+					// There cannot be more than one search entry found, so using a naive IndexOf loop as opposed to trying to ensure we have the earliest occurrence of any of them.
+					var specialOffset = text.IndexOf(entry.Search, StringComparison.Ordinal);
+					if (specialOffset > -1)
 					{
-						var wordCount = prefix.Split(' ').Length;
-						if (wordCount > 4 || char.IsLower(text[0]) || prefix.Contains("."))
+						line = CheckValidLine(entry.LineType, text.Substring(0, specialOffset), text.Substring(specialOffset + entry.Offset).TrimStart());
+						if (line != null)
 						{
-							// Assume it's part of previous text if it starts with a lower-case letter or it's exceptionally long.
-							break;
+							endLines.Push(line);
+							singleLines--;
 						}
 					}
-
-					singleLines--;
-					text = text.Substring(prefix.Length + 1).TrimStart();
-					endLines.Push(new Line(lineType, prefix, text));
 				}
 			}
-			while (singleLines >= 0 && lineType != preferredType);
+			while (singleLines >= 0 && line != null);
 
 			if (singleLines != -1)
 			{
 				var text = string.Join(" ", lines.GetRange(0, singleLines + 1));
-				yield return new Line(preferredType, text);
+				var lineType = preferredType;
+				if (lineType == LineType.Plain && text.Split(Colon, 2) is var textSplit && textSplit.Length == 2)
+				{
+					switch (textSplit[0])
+					{
+						case "Note":
+							lineType = LineType.Note;
+							text = textSplit[1].TrimStart();
+							break;
+						case "Tip":
+							lineType = LineType.Tip;
+							text = textSplit[1].TrimStart();
+							break;
+					}
+				}
+
+				yield return new Line(lineType, text);
 			}
 
 			while (endLines.Count > 0)
@@ -189,148 +281,132 @@
 			}
 		}
 
-		private static IList<string> ParseEnemies(string subsectionText)
+		private static IEnumerable<string> ParseEnemies(string subsectionText)
 		{
-			var lines = new List<Line>(WrappedLines(TrimStart(subsectionText), LineType.Plain));
+			var lines = WrappedLines(TrimStart(subsectionText), LineType.Plain);
 			if (lines.Count != 1)
 			{
 				throw new InvalidOperationException("Malformed Enemies section!");
 			}
 
-			var retval = new List<string>(lines[0].Text.Split(new[] { ", " }, StringSplitOptions.None));
-			if (retval.Count > 0)
-			{
-				retval.Sort();
-			}
-
-			return retval;
+			return lines[0].Text.Split(new[] { ", " }, StringSplitOptions.None);
 		}
 
-		private static IList<Line> ParsePlot(string subsectionText, string areaName)
+		private static IEnumerable<Subsection> ParsePlot(string subsectionText, string areaName)
 		{
-			var retval = new List<Line>();
 			var entries = subsectionText.Split(new[] { EntryDelimiter }, StringSplitOptions.None);
 			foreach (var entry in entries)
 			{
-				var trimmedLines = TrimStart(entry);
-				retval.AddRange(WrappedLines(trimmedLines, LineType.Plain));
+				if (entry.Length > 0)
+				{
+					var wrapped = WrappedLines(TrimStart(entry), LineType.Plain);
+					var subsection = new Subsection(wrapped, false);
+					subsection.TrimAreaName(areaName);
+					yield return subsection;
+				}
 			}
-
-			foreach (var line in retval)
-			{
-				line.TrimAreaName(areaName);
-			}
-
-			return retval;
 		}
 
-		private static IList<Line> ParsePlainText(string subsectionText)
+		private static IEnumerable<Subsection> ParsePlainText(string subsectionText)
 		{
 			subsectionText = subsectionText.Trim();
 			var textSections = PlainTextFinder.Split(subsectionText);
 			if (textSections.Length == 0 || (textSections.Length == 1 && textSections[0].Length == 0))
 			{
-				return null;
+				throw new InvalidOperationException();
 			}
 
 			// This slightly odd loop construct handles both untitled text as well as titled within the same loop.
-			var retval = new List<Line>();
 			for (var i = -1; i < textSections.Length; i += 2)
 			{
+				Line? title = null;
+				var lines = new List<Line>();
 				if (i > -1)
 				{
-					retval.Add(new Line(LineType.Title, textSections[i]));
+					title = new Line(LineType.Title, textSections[i]);
 				}
 
 				if (textSections[i + 1].Length > 0)
 				{
 					foreach (var line in textSections[i + 1].Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
 					{
-						retval.Add(new Line(LineType.Plain, line));
+						lines.Add(new Line(LineType.Plain, line));
 					}
 				}
-			}
 
-			return retval;
+				yield return new Subsection(title, lines);
+			}
 		}
 
-		private static IEnumerable<Subsection> ParseTitledSubsection(string subsectionText, string areaName)
+		private static IEnumerable<Subsection> ParseSubsection(string subsectionText, string areaName, LineType firstLine)
 		{
 			var entries = subsectionText.Split(new[] { EntryDelimiter }, StringSplitOptions.None);
 			foreach (var entry in entries)
 			{
-				var trimmedLines = TrimStart(entry);
-				if (trimmedLines.Count > 1 || trimmedLines[0].Length > 0)
+				if (entry.Length > 0)
 				{
-					var wrapped = WrappedLines(trimmedLines, LineType.Title);
-					var subsection = new Subsection(wrapped);
+					var wrapped = WrappedLines(TrimStart(entry), firstLine);
+					var subsection = new Subsection(wrapped, firstLine == LineType.Title);
 					subsection.TrimAreaName(areaName);
-					subsection.ReparseLocations();
 					yield return subsection;
-				}
-				else if (trimmedLines.Count > 0 && trimmedLines[0].Length > 0)
-				{
-					Debug.WriteLine("WTF?");
 				}
 			}
 		}
 
 		private static List<string> TrimStart(string text)
 		{
+			var hasContent = false;
 			var retval = new List<string>();
 			foreach (var line in text.Split('\n'))
 			{
-				retval.Add(line.Trim());
+				var trimmed = line.Trim();
+				if (trimmed.Length > 0)
+				{
+					hasContent = true;
+				}
+
+				if (hasContent)
+				{
+					retval.Add(line.Trim());
+				}
 			}
 
 			return retval;
 		}
 
-		private static IEnumerable<Line> WrappedLines(IEnumerable<string> lines, LineType lineType)
+		private static List<Line> WrappedLines(List<string> lines, LineType lineType)
 		{
-			var newLines = new List<string>(lines);
-			if (newLines[^1].Length > 0)
+			var retval = new List<Line>();
+			var sectionLines = new List<string>();
+			foreach (var line in lines)
 			{
-				newLines.Add(string.Empty); // Avoids having to do post-loop repetition of the line.Length == 0 block.
-			}
-
-			var i = 0;
-			if (newLines[i].Length > 0 && lineType == LineType.Title)
-			{
-				yield return new Line(lineType, newLines[i]);
-				lineType = LineType.Plain;
-				i++;
-			}
-
-			var index = i;
-			var count = 0;
-			for (; i < newLines.Count; i++)
-			{
-				var line = newLines[i];
-				if (line.Length == 0)
+				if (lineType == LineType.Title)
 				{
-					if (count > 0)
-					{
-						var newerLines = newLines.GetRange(index, count);
-						foreach (var newLine in GetLineTypes(newerLines, lineType))
-						{
-							yield return newLine;
-						}
-					}
-
-					index = i + 1;
-					count = 0;
+					retval.Add(new Line(lineType, line));
+					lineType = LineType.Plain;
+				}
+				else if (line.Length > 0)
+				{
+					sectionLines.Add(line);
 				}
 				else
 				{
-					count++;
+					retval.AddRange(GetLineTypes(sectionLines, lineType));
+					sectionLines.Clear();
 				}
 			}
+
+			if (sectionLines.Count > 0)
+			{
+				retval.AddRange(GetLineTypes(sectionLines, lineType));
+			}
+
+			return retval;
 		}
 		#endregion
 
 		#region Private Methods
-		private void ParseCompanions(string subsectionText)
+		private static IEnumerable<Companion> ParseCompanions(string subsectionText)
 		{
 			var entries = subsectionText.Split(new[] { EntryDelimiter }, StringSplitOptions.None);
 			if (entries.Length > 1)
@@ -339,7 +415,7 @@
 				{
 					var entryText = entries[i].TrimEnd();
 					var companionLines = TrimStart(entryText);
-					this.Companions.Add(new Companion(companionLines));
+					yield return new Companion(companionLines);
 				}
 			}
 		}
@@ -349,9 +425,32 @@
 			var lines = TrimStart(subsectionText);
 			foreach (var line in lines)
 			{
-				var split = line.Split(new[] { " (" }, 2, StringSplitOptions.None);
-				var item = split[0].TrimEnd();
-				var quest = split.Length == 2 ? split[1].TrimEnd(')') : string.Empty;
+				var (quest, item) = SplitTreasure(line);
+				if (!this.Treasures.TryGetValue(quest, out var treasureList))
+				{
+					treasureList = new SortedSet<string>();
+					this.Treasures.Add(quest, treasureList);
+				}
+
+				treasureList.Add(Common.HarmonizeText(item));
+			}
+
+			static (string, string) SplitTreasure(string line)
+			{
+				var offset = line.LastIndexOf(" (");
+				if (offset > -1 && line.Substring(offset).Contains("diff:", StringComparison.OrdinalIgnoreCase))
+				{
+					offset = -1;
+				}
+
+				var item = offset == -1 ? line : line.Substring(0, offset);
+				var quest = offset == -1 ? string.Empty : line.Substring(offset + 2);
+				offset = quest.LastIndexOf(')');
+				if (offset > -1)
+				{
+					quest = quest.Remove(offset, 1);
+				}
+
 				if (quest == item)
 				{
 					quest = string.Empty;
@@ -364,13 +463,7 @@
 					quest += '[' + locSplit[1];
 				}
 
-				if (!this.Treasures.TryGetValue(quest, out var treasureList))
-				{
-					treasureList = new SortedSet<string>();
-					this.Treasures.Add(quest, treasureList);
-				}
-
-				treasureList.Add(Common.HarmonizeText(item));
+				return (quest, item);
 			}
 		}
 		#endregion

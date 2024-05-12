@@ -17,54 +17,22 @@
 	public class Line
 	{
 		#region Static Fields
-		private static readonly char[] Colon = new char[] { ':' };
 		private static readonly char[] TrimChars = new char[] { ' ', ',', '.' };
 		#endregion
 
 		#region Public Constructors
 		public Line(LineType lineType, string text)
 		{
-			text = Common.HarmonizeText(text);
-			if (lineType == LineType.Plain && text.Split(Colon, 2) is var textSplit && textSplit.Length == 2)
-			{
-				switch (textSplit[0])
-				{
-					case "Note":
-						lineType = LineType.Note;
-						text = textSplit[1].TrimStart();
-						break;
-					case "Tip":
-						lineType = LineType.Tip;
-						text = textSplit[1].TrimStart();
-						break;
-				}
-			}
-
 			this.Type = lineType;
-			this.Text = text;
+			this.Text = Common.HarmonizeText(text);
 		}
 
 		public Line(LineType lineType, string prefix, string text)
-		{
-			text = Common.HarmonizeText(text);
-			if (lineType == LineType.Colon && text.EndsWith("].", StringComparison.Ordinal))
-			{
-				text = text[0..^1];
-			}
-
-			this.Type = prefix switch
-			{
-				"Note" => LineType.Note,
-				"Tip" => LineType.Tip,
-				_ => lineType
-			};
-			this.Prefix = prefix;
-			this.Text = text;
-		}
+			: this(lineType, text) => this.Prefix = Common.HarmonizeText(prefix);
 		#endregion
 
 		#region Public Properties
-		public string Prefix { get; set; }
+		public string? Prefix { get; set; }
 
 		public string Text { get; set; }
 

@@ -29,8 +29,8 @@
 			.WriteIndentedLine("table.companions td, table.treasure td { border:1px solid; padding:0.25em; }")
 			.WriteIndentedLine("ul { list-style-type:disc; }")
 			.WriteIndentedLine(".area { font-size:smaller; color:#696969; }")
+			.WriteIndentedLine(".bold { font-weight:bold; }")
 			.WriteIndentedLine(".centernowrap { text-align:center; white-space:nowrap; }")
-			.WriteIndentedLine(".intro { font-weight:bold; color:#4B0082; }")
 			.WriteIndentedLine(".location { font-size:smaller; font-family:Courier New; color:#808080; vertical-align:super; }")
 			.WriteIndentedLine(".note { width:80%; margin:1em auto; padding:0.5em; border:2px solid #4169E1; margin-top:1em; background:#87CEEB; }")
 			.WriteIndentedLine(".npc { font-weight:bold; color:#0000FF; }")
@@ -43,15 +43,15 @@
 
 		protected override void WriteBulletedListEnd() => this.htmlWriter.CloseTag();
 
-		protected override void WriteBulletedListItem(string text) => this.WriteTextTag("li", text);
+		protected override void WriteBulletedListItem(string text) => this.WriteTextTag("li", StylizeLocations(text));
 
 		protected override void WriteBulletedListStart() => this.htmlWriter.OpenTag("ul");
 
-		protected override void WriteHeader(int level, Paragraph paragraph) => this.WriteTextTag("h" + level.ToString(), paragraph);
+		protected override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteTextTag("h" + level.ToString(), text);
 
 		protected override void WriteParagraph(Paragraph paragraph) => this.WriteTextTag("p", paragraph, ("class", paragraph.Style));
 
-		protected override void WriteStylizedText(string style, string text)
+		protected override void WriteStylizedText(string? style, string text)
 		{
 			if (string.IsNullOrEmpty(text))
 			{
@@ -82,9 +82,9 @@
 			this.htmlWriter.CloseTag();
 		}
 
-		protected override void WriteTableCell(string style, int mergeCount, IEnumerable<Paragraph> paragraphs)
+		protected override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
 		{
-			var attrs = new List<(string, string)> { ("class", style) };
+			var attrs = new List<(string?, string?)> { ("class", style) };
 			if (mergeCount > 1)
 			{
 				attrs.Add(("colspan", mergeCount.ToString()));
@@ -117,7 +117,7 @@
 
 		protected override void WriteTableStart(string type, int percentWidth)
 		{
-			var attributes = new List<(string, string)>()
+			var attributes = new List<(string?, string?)>()
 			{
 				("class", type)
 			};
@@ -132,12 +132,10 @@
 		#endregion
 
 		#region Private Methods
-		private void WriteTextTag(string tag, string text, params (string Key, string Value)[] attributes) => this.WriteTextTag(tag, GetParagraph(text), attributes);
-
-		private void WriteTextTag(string tag, Paragraph paragraph, params (string Key, string Value)[] attributes)
+		private void WriteTextTag(string tag, IEnumerable<StylizedText> text, params (string? Key, string? Value)[] attributes)
 		{
 			this.htmlWriter.OpenTextTag(tag, attributes);
-			this.WriteStylizedText(paragraph);
+			this.WriteStylizedText(text);
 			this.htmlWriter.CloseTag();
 		}
 		#endregion
