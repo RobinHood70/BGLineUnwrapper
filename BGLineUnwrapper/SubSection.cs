@@ -2,22 +2,21 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Diagnostics;
 
 	public class Subsection
 	{
 		#region Constructors
-		public Subsection(Line? title, IList<Line> lines)
+		public Subsection(Line? title, List<Line> lines)
 		{
 			this.Title = title;
 			this.Lines = lines;
 		}
 
-		public Subsection(IList<Line> lines, bool checkForTitle)
+		public Subsection(List<Line> lines, bool checkForTitle)
 		{
 			if (checkForTitle)
 			{
-				this.Lines = new List<Line>();
+				this.Lines = [];
 				foreach (var line in lines)
 				{
 					if (line.Type == LineType.Title)
@@ -32,13 +31,13 @@
 			}
 			else
 			{
-				this.Lines = new List<Line>(lines);
+				this.Lines = lines;
 			}
 		}
 		#endregion
 
 		#region Public Properties
-		public IList<Line> Lines { get; }
+		public List<Line> Lines { get; }
 
 		public Line? Title { get; set; }
 		#endregion
@@ -95,7 +94,7 @@
 				if (index > -1)
 				{
 					index += searchLine.Prefix.Length;
-					while (index < line.Text.Length && " \n".IndexOf(line.Text[index]) == -1)
+					while (index < line.Text.Length && !" \n".Contains(line.Text[index]))
 					{
 						index++;
 					}

@@ -5,24 +5,23 @@
 	using System.IO;
 	using System.Net;
 
-	internal class HtmlWriter
+	internal sealed class HtmlWriter(StreamWriter writer, string? defaultNamespace)
 	{
 		#region Private Constants
 		private const string IndentText = "\t";
 		#endregion
 
 		#region Fields
-		private readonly Stack<(string Tag, bool NewLine)> tags = new Stack<(string, bool)>();
-		private readonly StreamWriter writer;
-		private int indent = 0;
+		private readonly Stack<(string Tag, bool NewLine)> tags = new();
+		private int indent;
 		private bool atStartOfLine = true;
 		#endregion
 
 		#region Constructors
-		public HtmlWriter(StreamWriter writer) => this.writer = writer;
-
-		public HtmlWriter(StreamWriter writer, string defaultNamespace)
-			: this(writer) => this.DefaultNamespace = defaultNamespace;
+		public HtmlWriter(StreamWriter writer)
+			: this(writer, null)
+		{
+		}
 		#endregion
 
 		#region Private Enumerations
@@ -36,7 +35,7 @@
 		#endregion
 
 		#region Public Properties
-		public string? DefaultNamespace { get; set; }
+		public string? DefaultNamespace { get; set; } = defaultNamespace;
 		#endregion
 
 		#region Public Methods
@@ -75,24 +74,30 @@
 			return this;
 		}
 
-		public HtmlWriter OpenTag(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, attributes);
+		public HtmlWriter OpenTag(string name) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, null);
 
-		public HtmlWriter OpenTagInline(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.None, attributes);
+		public HtmlWriter OpenTag(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, attributes);
 
-		public HtmlWriter OpenTextTag(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.Indent, attributes);
+		public HtmlWriter OpenTagInline(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.None, attributes);
 
-		public HtmlWriter OpenTextTag(string name, IEnumerable<(string? Key, string? Value)> attributes) => this.FullTag(name, TagProperties.Indent, attributes);
+		public HtmlWriter OpenTextTag(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.Indent, attributes);
 
-		public HtmlWriter SelfClosingTagInline(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.SelfClose, attributes);
+		public HtmlWriter OpenTextTag(string name, IEnumerable<Attribute> attributes) => this.FullTag(name, TagProperties.Indent, attributes);
 
-		public HtmlWriter SelfClosingTag(string name, params (string? Key, string? Value)[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, attributes);
+		public HtmlWriter SelfClosingTagInline(string name) => this.FullTag(name, TagProperties.SelfClose, null);
 
-		public HtmlWriter TextTag(string name, string content, params (string? Key, string? Value)[] attributes) => this
+		public HtmlWriter SelfClosingTagInline(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.SelfClose, attributes);
+
+		public HtmlWriter SelfClosingTag(string name) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, null);
+
+		public HtmlWriter SelfClosingTag(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, attributes);
+
+		public HtmlWriter TextTag(string name, string content, params Attribute[] attributes) => this
 			.OpenTextTag(name, attributes)
 			.WriteText(content)
 			.CloseTag();
 
-		public HtmlWriter TextTagInline(string name, string content, params (string? Key, string? Value)[] attributes) => this
+		public HtmlWriter TextTagInline(string name, string content, params Attribute[] attributes) => this
 			.OpenTagInline(name, attributes)
 			.WriteText(content)
 			.CloseTag();
@@ -101,8 +106,8 @@
 		{
 			if (!string.IsNullOrEmpty(text))
 			{
-				this.writer.Write(text);
-				this.atStartOfLine = text.EndsWith(this.writer.NewLine, StringComparison.Ordinal);
+				writer.Write(text);
+				this.atStartOfLine = text.EndsWith(writer.NewLine, StringComparison.Ordinal);
 			}
 
 			return this;
@@ -117,7 +122,7 @@
 
 			for (var i = 0; i < this.indent; i++)
 			{
-				this.writer.Write(IndentText);
+				writer.Write(IndentText);
 			}
 
 			return this;
@@ -131,7 +136,7 @@
 
 		public HtmlWriter WriteLine(string? text)
 		{
-			this.writer.WriteLine(text);
+			writer.WriteLine(text);
 			this.atStartOfLine = true;
 			return this;
 		}
@@ -141,11 +146,11 @@
 
 		#region Private Methods
 		private string AddNamespace(string text) =>
-			text[0] == ':' ? text.Substring(1) :
-			(this.DefaultNamespace == null || text.Contains(":")) ? text :
+			text[0] == ':' ? text[1..] :
+			(this.DefaultNamespace == null || text.Contains(':')) ? text :
 			this.DefaultNamespace + ':' + text;
 
-		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<(string? Key, string? Value)> attributes)
+		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<Attribute>? attributes)
 		{
 			var hierarchical = false;
 			if (props.HasFlag(TagProperties.Indent))
@@ -159,7 +164,7 @@
 			}
 
 			tag = this.AddNamespace(tag);
-			this.writer.Write('<' + tag);
+			writer.Write('<' + tag);
 			if (attributes != null)
 			{
 				foreach (var (key, value) in attributes)
@@ -167,20 +172,22 @@
 					if (key != null && value != null)
 					{
 						var newKey = this.AddNamespace(key);
-						var newValue = value[0] == '\'' || value[0] == '\"' ? value : '\"' + value + '\"';
-						this.writer.Write($" {newKey}={newValue}");
+						var newValue = value[0] is '\'' or '\"'
+							? value
+							: '\"' + value + '\"';
+						writer.Write($" {newKey}={newValue}");
 					}
 				}
 			}
 
 			if (props.HasFlag(TagProperties.SelfClose))
 			{
-				this.writer.Write(tag[0] == '?' ? "?>" : "/>");
+				writer.Write(tag[0] == '?' ? "?>" : "/>");
 			}
 			else
 			{
 				this.tags.Push((tag, hierarchical));
-				this.writer.Write('>');
+				writer.Write('>');
 			}
 
 			if (props.HasFlag(TagProperties.NewLineAfter))

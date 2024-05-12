@@ -14,46 +14,44 @@
 	}
 	#endregion
 
-	public class Line
+	public class Line(LineType lineType, string? prefix, string text)
 	{
 		#region Static Fields
-		private static readonly char[] TrimChars = new char[] { ' ', ',', '.' };
+		private static readonly char[] TrimChars = [' ', ',', '.'];
 		#endregion
 
 		#region Public Constructors
 		public Line(LineType lineType, string text)
+			: this(lineType, null, text)
 		{
-			this.Type = lineType;
-			this.Text = Common.HarmonizeText(text);
 		}
-
-		public Line(LineType lineType, string prefix, string text)
-			: this(lineType, text) => this.Prefix = Common.HarmonizeText(prefix);
 		#endregion
 
 		#region Public Properties
-		public string? Prefix { get; set; }
+		public string? Prefix { get; } = prefix is null
+			? null
+			: Common.HarmonizeText(prefix);
 
-		public string Text { get; set; }
+		public string Text { get; set; } = Common.HarmonizeText(text);
 
-		public LineType Type { get; set; }
+		public LineType Type { get; set; } = lineType;
 		#endregion
 
 		#region Public Methods
 		public void TrimAreaName(string areaName)
 		{
-			if (this.Type != LineType.Colon && this.Type != LineType.Title)
+			if (this.Type is not LineType.Colon and not LineType.Title)
 			{
 				return;
 			}
 
 			if (this.Text.StartsWith(areaName, StringComparison.OrdinalIgnoreCase))
 			{
-				this.Text = this.Text.Substring(areaName.Length).TrimStart(TrimChars);
+				this.Text = this.Text[areaName.Length..].TrimStart(TrimChars);
 			}
 			else if (this.Text.EndsWith(areaName, StringComparison.OrdinalIgnoreCase))
 			{
-				this.Text = this.Text.Substring(0, this.Text.Length - areaName.Length).TrimEnd(TrimChars);
+				this.Text = this.Text[..^areaName.Length].TrimEnd(TrimChars);
 			}
 			else
 			{

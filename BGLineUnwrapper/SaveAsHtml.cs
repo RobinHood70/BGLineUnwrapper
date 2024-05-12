@@ -1,16 +1,13 @@
 ﻿namespace LineUnwrapper
 {
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.IO;
 
-	internal class SaveAsHtml : SaveAs
+	internal sealed class SaveAsHtml(StreamWriter writer) : SaveAs
 	{
 		#region Fields
-		private readonly HtmlWriter htmlWriter;
-		#endregion
-
-		#region Constructors
-		public SaveAsHtml(StreamWriter writer) => this.htmlWriter = new HtmlWriter(writer);
+		private readonly HtmlWriter htmlWriter = new(writer);
 		#endregion
 
 		#region Protected Override Methods
@@ -47,7 +44,7 @@
 
 		protected override void WriteBulletedListStart() => this.htmlWriter.OpenTag("ul");
 
-		protected override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteTextTag("h" + level.ToString(), text);
+		protected override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteTextTag($"h{level}", text);
 
 		protected override void WriteParagraph(Paragraph paragraph) => this.WriteTextTag("p", paragraph, ("class", paragraph.Style));
 
@@ -84,14 +81,14 @@
 
 		protected override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
 		{
-			var attrs = new List<(string?, string?)> { ("class", style) };
+			var attrs = new List<Attribute> { new("class", style) };
 			if (mergeCount > 1)
 			{
-				attrs.Add(("colspan", mergeCount.ToString()));
+				attrs.Add(("colspan", mergeCount.ToString(CultureInfo.InvariantCulture)));
 			}
 
 			this.htmlWriter.OpenTextTag("td", attrs);
-			if (!(paragraphs is List<Paragraph> newParas))
+			if (paragraphs is not List<Paragraph> newParas)
 			{
 				newParas = new List<Paragraph>(paragraphs);
 			}
@@ -117,7 +114,7 @@
 
 		protected override void WriteTableStart(string type, int percentWidth)
 		{
-			var attributes = new List<(string?, string?)>()
+			var attributes = new List<Attribute>()
 			{
 				("class", type)
 			};
@@ -127,12 +124,12 @@
 				attributes.Add(("style", $"width:{percentWidth}%"));
 			}
 
-			this.htmlWriter.OpenTag("table", attributes.ToArray());
+			this.htmlWriter.OpenTag("table", [.. attributes]);
 		}
 		#endregion
 
 		#region Private Methods
-		private void WriteTextTag(string tag, IEnumerable<StylizedText> text, params (string? Key, string? Value)[] attributes)
+		private void WriteTextTag(string tag, IEnumerable<StylizedText> text, params Attribute[] attributes)
 		{
 			this.htmlWriter.OpenTextTag(tag, attributes);
 			this.WriteStylizedText(text);

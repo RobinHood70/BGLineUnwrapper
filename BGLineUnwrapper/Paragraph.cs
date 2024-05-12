@@ -3,10 +3,10 @@
 	using System.Collections;
 	using System.Collections.Generic;
 
-	internal class Paragraph : IEnumerable<StylizedText>
+	internal sealed class Paragraph(string? style, IEnumerable<StylizedText> text) : IList<StylizedText>
 	{
 		#region Fields
-		private readonly IList<StylizedText> text;
+		private readonly IList<StylizedText> text = text is IList<StylizedText> listText ? listText : new List<StylizedText>(text);
 		#endregion
 
 		#region Constructors
@@ -16,19 +16,17 @@
 		}
 
 		public Paragraph(string? style, string text)
-			: this(style, new[] { new StylizedText(text) })
+			: this(style, new List<StylizedText>() { new(text) })
 		{
-		}
-
-		public Paragraph(string? style, IEnumerable<StylizedText> text)
-		{
-			this.text = new List<StylizedText>(text);
-			this.Style = style;
 		}
 		#endregion
 
 		#region Public Properties
-		public string? Style { get; set; }
+		public int Count => this.text.Count;
+
+		public bool IsReadOnly => this.text.IsReadOnly;
+
+		public string? Style { get; set; } = style;
 		#endregion
 
 		#region Public Indexers
@@ -62,7 +60,21 @@
 			}
 		}
 
+		public void Clear() => this.text.Clear();
+
+		public bool Contains(StylizedText item) => this.text.Contains(item);
+
+		public void CopyTo(StylizedText[] array, int arrayIndex) => this.text.CopyTo(array, arrayIndex);
+
 		public IEnumerator<StylizedText> GetEnumerator() => this.text.GetEnumerator();
+
+		public int IndexOf(StylizedText item) => this.text.IndexOf(item);
+
+		public void Insert(int index, StylizedText item) => this.text.Insert(index, item);
+
+		public bool Remove(StylizedText item) => this.text.Remove(item);
+
+		public void RemoveAt(int index) => this.text.RemoveAt(index);
 
 		IEnumerator IEnumerable.GetEnumerator() => this.text.GetEnumerator();
 		#endregion

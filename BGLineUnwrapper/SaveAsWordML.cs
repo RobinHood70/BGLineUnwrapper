@@ -2,16 +2,13 @@
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.IO;
 
-	internal class SaveAsWordML : SaveAs
+	internal sealed class SaveAsWordML(StreamWriter writer) : SaveAs
 	{
 		#region Fields
-		private readonly HtmlWriter htmlWriter;
-		#endregion
-
-		#region Constructors
-		public SaveAsWordML(StreamWriter writer) => this.htmlWriter = new HtmlWriter(writer, "w");
+		private readonly HtmlWriter htmlWriter = new(writer, "w");
 		#endregion
 
 		#region Protected Override Methods
@@ -162,7 +159,7 @@
 		#region Private Static Methods
 		private static string InchesToTwips(double inches) => IntString(inches * 1440);
 
-		private static string IntString(double number) => ((int)Math.Round(number)).ToString();
+		private static string IntString(double number) => ((int)Math.Round(number)).ToString(CultureInfo.InvariantCulture);
 
 		private static string PointsToEtips(double points) => IntString(points * 8);
 

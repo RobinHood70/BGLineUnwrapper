@@ -4,7 +4,7 @@
 	using System.Collections.Generic;
 	using System.Text.RegularExpressions;
 
-	public class Section
+	public partial class Section
 	{
 		#region Constants
 		public const string Divider = "-------------------------------------------------------------------------------";
@@ -12,23 +12,23 @@
 		#endregion
 
 		#region Static Fields
-		private static readonly char[] Colon = new char[] { ':' };
-		private static readonly Regex SubsectionFinder = new Regex(@"\n+(?<subsection>[^ \n][^:\n]*?):", RegexOptions.Singleline);
-		private static readonly Regex PlainTextFinder = new Regex(@"(?<title>[^\n]*)\n-+\n", RegexOptions.Singleline);
-		private static readonly Regex OldLocFinder = new Regex(@",?(\s+at)?\s*(\(x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))(?<punc>[\p{P}]*)");
-		private static readonly Regex AreaFinder = new Regex(@"\((?<area>([A-Z]{2}\d{4},? ?)+)\)");
-		private static readonly (string Search, int Offset, LineType LineType)[] SearchStrings = new[]
-		{
+		private static readonly char[] Colon = [':'];
+		private static readonly string[] CommaSpace = [", "];
+		private static readonly char[] NewLine = ['\n'];
+		private static readonly char[] OpenSquare = ['['];
+		private static readonly string[] SpaceParens = [" ("];
+		private static readonly (string Search, int Offset, LineType LineType)[] SearchStrings =
+		[
 			(":[", 1, LineType.Colon),
 			(": ", 2, LineType.Colon),
 			("--", 2, LineType.Dashed)
-		};
+		];
 		#endregion
 
 		#region Constructors
 		public Section(string sectionText)
 		{
-			sectionText = OldLocFinder.Replace(sectionText, "${punc}[${x}.${y}]");
+			sectionText = OldLocFinder().Replace(sectionText, "${punc}[${x}.${y}]");
 			var split = sectionText.Split(new[] { Divider }, StringSplitOptions.None);
 			if (split.Length != 2)
 			{
@@ -37,36 +37,36 @@
 
 			var titleText = split[0].TrimEnd();
 			var bodyText = split[1];
-			var sectionNum = titleText.IndexOf(". ");
+			var sectionNum = titleText.IndexOf(". ", StringComparison.Ordinal);
 			if (sectionNum == -1)
 			{
 				this.Title = titleText.Trim();
-				this.PlainText = new List<Subsection>(ParsePlainText(bodyText));
+				this.PlainText.AddRange(ParsePlainText(bodyText));
 
 				return;
 			}
 
-			titleText = titleText.Substring(sectionNum + 2).Trim();
-			titleText = titleText.Substring(0, titleText.LastIndexOf('[') - 1).TrimEnd();
+			titleText = titleText[(sectionNum + 2)..].Trim();
+			titleText = titleText[..(titleText.LastIndexOf('[') - 1)].TrimEnd();
 
-			var areaMatch = AreaFinder.Match(titleText);
+			var areaMatch = AreaFinder().Match(titleText);
 			if (areaMatch.Success)
 			{
 				this.Area = areaMatch.Groups["area"].Value;
-				this.Title = titleText.Substring(0, areaMatch.Index - 1).TrimEnd();
+				this.Title = titleText[..(areaMatch.Index - 1)].TrimEnd();
 			}
 			else
 			{
 				this.Title = titleText;
 			}
 
-			var matches = SubsectionFinder.Split(bodyText);
+			var matches = SubsectionFinder().Split(bodyText);
 			if (matches[0].Length > 0)
 			{
 				throw new InvalidOperationException("Invalid section format!");
 			}
 
-			var titleTrimmed = this.Title.Split(new[] { " (" }, StringSplitOptions.None)[0];
+			var titleTrimmed = this.Title.Split(SpaceParens, StringSplitOptions.None)[0];
 			for (var i = 1; i < matches.Length; i += 2)
 			{
 				var subsectionTitle = matches[i];
@@ -76,30 +76,30 @@
 					case "Assassination Attempt":
 					case "Assassination Attempts":
 					case "Enemy Wizards":
-						if (this.Assassinations != null)
+						if (this.Assassinations.Count > 0)
 						{
 							throw new InvalidOperationException("Duplicate entry.");
 						}
 
-						this.Assassinations = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
+						this.Assassinations.AddRange(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
 						break;
 					case "Companions":
-						if (this.Companions != null)
+						if (this.Companions.Count > 0)
 						{
 							throw new InvalidOperationException("Duplicate entry.");
 						}
 
-						this.Companions = new List<Companion>(ParseCompanions(subbodyText));
+						this.Companions.AddRange(ParseCompanions(subbodyText));
 						break;
 					case "Enemies":
-						if (this.Enemies != null)
+						if (this.Enemies.Count > 0)
 						{
 							throw new InvalidOperationException("Duplicate entry.");
 						}
 
 						var enemies = new List<string>(ParseEnemies(subbodyText));
 						enemies.Sort();
-						this.Enemies = enemies;
+						this.Enemies.AddRange(enemies);
 						break;
 					case "Note":
 						if (this.Notes != null)
@@ -110,20 +110,20 @@
 						this.Notes = new Subsection(WrappedLines(TrimStart(subbodyText), LineType.Note), false);
 						break;
 					case "Other":
-						if (this.Other != null)
+						if (this.Other.Count > 0)
 						{
 							throw new InvalidOperationException("Duplicate entry.");
 						}
 
-						this.Other = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
+						this.Other.AddRange(ParseSubsection(subbodyText, titleTrimmed, LineType.Title));
 						break;
 					case "Plot":
-						if (this.Plot != null)
+						if (this.Plot.Count > 0)
 						{
 							throw new InvalidOperationException("Duplicate entry.");
 						}
 
-						this.Plot = new List<Subsection>(ParseSubsection(subbodyText, titleTrimmed, LineType.Plain));
+						this.Plot.AddRange(ParseSubsection(subbodyText, titleTrimmed, LineType.Plain));
 						break;
 					case "Subquests":
 						if (this.Subquests != null)
@@ -147,25 +147,25 @@
 		#region Public Properties
 		public string? Area { get; }
 
-		public IList<Subsection> Assassinations { get; }
+		public List<Subsection> Assassinations { get; } = [];
 
-		public IList<Companion> Companions { get; }
+		public List<Companion> Companions { get; } = [];
 
-		public IList<string>? Enemies { get; }
+		public List<string> Enemies { get; } = [];
 
 		public Subsection? Notes { get; }
 
-		public IList<Subsection>? Other { get; }
+		public List<Subsection> Other { get; } = [];
 
-		public IList<Subsection>? PlainText { get; }
+		public List<Subsection> PlainText { get; } = [];
 
-		public IList<Subsection>? Plot { get; }
+		public List<Subsection> Plot { get; } = [];
 
-		public IList<Subsection>? Subquests { get; }
+		public List<Subsection> Subquests { get; } = [];
 
 		public string Title { get; }
 
-		public IDictionary<string, ICollection<string>> Treasures { get; } = new SortedDictionary<string, ICollection<string>>();
+		public SortedDictionary<string, List<string>> Treasures { get; } = [];
 		#endregion
 
 		#region Public Override Methods
@@ -242,7 +242,7 @@
 					var specialOffset = text.IndexOf(entry.Search, StringComparison.Ordinal);
 					if (specialOffset > -1)
 					{
-						line = CheckValidLine(entry.LineType, text.Substring(0, specialOffset), text.Substring(specialOffset + entry.Offset).TrimStart());
+						line = CheckValidLine(entry.LineType, text[..specialOffset], text[(specialOffset + entry.Offset)..].TrimStart());
 						if (line != null)
 						{
 							endLines.Push(line);
@@ -281,36 +281,18 @@
 			}
 		}
 
-		private static IEnumerable<string> ParseEnemies(string subsectionText)
+		private static string[] ParseEnemies(string subsectionText)
 		{
 			var lines = WrappedLines(TrimStart(subsectionText), LineType.Plain);
-			if (lines.Count != 1)
-			{
-				throw new InvalidOperationException("Malformed Enemies section!");
-			}
-
-			return lines[0].Text.Split(new[] { ", " }, StringSplitOptions.None);
-		}
-
-		private static IEnumerable<Subsection> ParsePlot(string subsectionText, string areaName)
-		{
-			var entries = subsectionText.Split(new[] { EntryDelimiter }, StringSplitOptions.None);
-			foreach (var entry in entries)
-			{
-				if (entry.Length > 0)
-				{
-					var wrapped = WrappedLines(TrimStart(entry), LineType.Plain);
-					var subsection = new Subsection(wrapped, false);
-					subsection.TrimAreaName(areaName);
-					yield return subsection;
-				}
-			}
+			return lines.Count != 1
+				? throw new InvalidOperationException("Malformed Enemies section!")
+				: lines[0].Text.Split(CommaSpace, StringSplitOptions.None);
 		}
 
 		private static IEnumerable<Subsection> ParsePlainText(string subsectionText)
 		{
 			subsectionText = subsectionText.Trim();
-			var textSections = PlainTextFinder.Split(subsectionText);
+			var textSections = PlainTextFinder().Split(subsectionText);
 			if (textSections.Length == 0 || (textSections.Length == 1 && textSections[0].Length == 0))
 			{
 				throw new InvalidOperationException();
@@ -328,7 +310,7 @@
 
 				if (textSections[i + 1].Length > 0)
 				{
-					foreach (var line in textSections[i + 1].Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
+					foreach (var line in textSections[i + 1].Split(NewLine, StringSplitOptions.RemoveEmptyEntries))
 					{
 						lines.Add(new Line(LineType.Plain, line));
 					}
@@ -428,7 +410,7 @@
 				var (quest, item) = SplitTreasure(line);
 				if (!this.Treasures.TryGetValue(quest, out var treasureList))
 				{
-					treasureList = new SortedSet<string>();
+					treasureList = [];
 					this.Treasures.Add(quest, treasureList);
 				}
 
@@ -437,14 +419,14 @@
 
 			static (string, string) SplitTreasure(string line)
 			{
-				var offset = line.LastIndexOf(" (");
-				if (offset > -1 && line.Substring(offset).Contains("diff:", StringComparison.OrdinalIgnoreCase))
+				var offset = line.LastIndexOf(" (", StringComparison.Ordinal);
+				if (offset > -1 && line[offset..].Contains("diff:", StringComparison.OrdinalIgnoreCase))
 				{
 					offset = -1;
 				}
 
-				var item = offset == -1 ? line : line.Substring(0, offset);
-				var quest = offset == -1 ? string.Empty : line.Substring(offset + 2);
+				var item = offset == -1 ? line : line[..offset];
+				var quest = offset == -1 ? string.Empty : line[(offset + 2)..];
 				offset = quest.LastIndexOf(')');
 				if (offset > -1)
 				{
@@ -456,7 +438,7 @@
 					quest = string.Empty;
 				}
 
-				var locSplit = item.Split(new[] { '[' }, 2);
+				var locSplit = item.Split(OpenSquare, 2);
 				if (locSplit.Length == 2)
 				{
 					item = locSplit[0];
@@ -466,6 +448,18 @@
 				return (quest, item);
 			}
 		}
+		#endregion
+
+		#region Private GeneratedRegexes
+		[GeneratedRegex(@"(?<title>[^\n]*)\n-+\n", RegexOptions.Singleline)]
+		private static partial Regex PlainTextFinder();
+
+		[GeneratedRegex(@"\n+(?<subsection>[^ \n][^:\n]*?):", RegexOptions.Singleline)]
+		private static partial Regex SubsectionFinder();
+		[GeneratedRegex(@",?(\s+at)?\s*(\(x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))(?<punc>[\p{P}]*)")]
+		private static partial Regex OldLocFinder();
+		[GeneratedRegex(@"\((?<area>([A-Z]{2}\d{4},? ?)+)\)")]
+		private static partial Regex AreaFinder();
 		#endregion
 	}
 }

@@ -25,7 +25,7 @@
 		#endregion
 
 		#region Protected Static Methods
-		protected static Paragraph GetParagraph(string text) => new Paragraph(null, StylizeLocations(text));
+		protected static Paragraph GetParagraph(string text) => new(null, StylizeLocations(text));
 
 		protected static IEnumerable<StylizedText> StylizeLocations(string text) => StylizeLocations(null, text);
 
@@ -33,7 +33,7 @@
 		{
 			if (text != null)
 			{
-				var split = Common.LocFinder.Split(text);
+				var split = Common.LocFinder().Split(text);
 				var isLoc = false;
 				foreach (var line in split)
 				{
@@ -49,7 +49,7 @@
 		#endregion
 
 		#region Protected Methods
-		protected void WriteTableCell(string style, string text) => this.WriteTableCell(null, 1, new[] { new Paragraph(style, text) });
+		protected void WriteTableCell(string style, string text) => this.WriteTableCell(null, 1, [new Paragraph(style, text)]);
 
 		protected void WriteTableCell(string style, IEnumerable<Paragraph> paragraphs) => this.WriteTableCell(style, 1, paragraphs);
 
@@ -76,7 +76,7 @@
 			this.WriteStylizedText(lastStyle, writeText);
 		}
 
-		protected void WriteTableCell(Paragraph paragraph) => this.WriteTableCell(null, 1, new[] { paragraph });
+		protected void WriteTableCell(Paragraph paragraph) => this.WriteTableCell(null, 1, [paragraph]);
 		#endregion
 
 		#region Protected Abstract Methods
@@ -112,6 +112,11 @@
 		#region Private Methods
 		private void EmitCompanions(IList<Companion> companions)
 		{
+			if (companions.Count == 0)
+			{
+				return;
+			}
+
 			this.WriteHeader(2, "Companions");
 			this.WriteTableStart("companions", 100);
 			this.WriteTableHeader(
@@ -149,7 +154,7 @@
 				if (companion.Description != null)
 				{
 					this.WriteTableRowStart();
-					this.WriteTableCell(null, 9, new[] { GetParagraph(companion.Description) });
+					this.WriteTableCell(null, 9, [GetParagraph(companion.Description)]);
 					this.WriteTableRowEnd();
 				}
 			}
@@ -159,6 +164,11 @@
 
 		private void EmitEnemies(IList<string> enemies)
 		{
+			if (enemies.Count == 0)
+			{
+				return;
+			}
+
 			this.WriteHeader(2, "Enemies");
 			this.WriteParagraph(new Paragraph("single")
 			{
@@ -201,54 +211,24 @@
 			}
 
 			this.WriteHeader(1, stylizedText);
-			if (section.PlainText != null)
-			{
-				this.EmitPlainText(section.PlainText);
-			}
-
-			if (section.Notes != null)
-			{
-				this.EmitLines(section.Notes.Lines);
-			}
-
-			if (section.Companions != null)
-			{
-				this.EmitCompanions(section.Companions);
-			}
-
-			if (section.Enemies != null)
-			{
-				this.EmitEnemies(section.Enemies);
-			}
-
-			if (section.Assassinations != null)
-			{
-				this.EmitSubsections("Assassination Attempts", section.Assassinations);
-			}
-
-			if (section.Treasures.Count > 0)
-			{
-				this.EmitTreasures(section.Treasures);
-			}
-
-			if (section.Plot != null)
-			{
-				this.EmitSubsections("Plot", section.Plot);
-			}
-
-			if (section.Subquests != null)
-			{
-				this.EmitSubsections("Subquests", section.Subquests);
-			}
-
-			if (section.Other != null)
-			{
-				this.EmitSubsections("Other", section.Other);
-			}
+			this.EmitPlainText(section.PlainText);
+			this.EmitLines(section.Notes?.Lines);
+			this.EmitCompanions(section.Companions);
+			this.EmitEnemies(section.Enemies);
+			this.EmitSubsections("Assassination Attempts", section.Assassinations);
+			this.EmitTreasures(section.Treasures);
+			this.EmitSubsections("Plot", section.Plot);
+			this.EmitSubsections("Subquests", section.Subquests);
+			this.EmitSubsections("Other", section.Other);
 		}
 
-		private void EmitSubsections(string title, IEnumerable<Subsection> subsections)
+		private void EmitSubsections(string title, List<Subsection> subsections)
 		{
+			if (subsections.Count == 0)
+			{
+				return;
+			}
+
 			this.WriteHeader(2, title);
 			foreach (var subsection in subsections)
 			{
@@ -261,8 +241,13 @@
 			}
 		}
 
-		private void EmitLines(IEnumerable<Line> lines)
+		private void EmitLines(List<Line>? lines)
 		{
+			if (lines is null || lines.Count == 0)
+			{
+				return;
+			}
+
 			foreach (var line in lines)
 			{
 				var text = StylizeLocations(line.Text);
@@ -306,8 +291,13 @@
 			}
 		}
 
-		private void EmitTreasures(IDictionary<string, ICollection<string>> treasures)
+		private void EmitTreasures(SortedDictionary<string, List<string>> treasures)
 		{
+			if (treasures.Count == 0)
+			{
+				return;
+			}
+
 			this.WriteHeader(2, "Notable Treasure");
 			foreach (var treasure in treasures)
 			{

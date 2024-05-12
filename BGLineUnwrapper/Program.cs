@@ -29,7 +29,7 @@
 		#endregion
 
 		#region Private Methods
-		private static IEnumerable<Section> ConvertBG1(string text)
+		private static List<Section> ConvertBG1(string text)
 		{
 			var newText = new List<Section>();
 			text = HarmonizeText(text);
@@ -67,10 +67,10 @@
 						charNum++;
 					}
 
-					lines[lineNum] = new string(' ', 4 * charNum) + line.Substring(charNum).TrimEnd();
-					if (lines[lineNum].Contains("\t"))
+					lines[lineNum] = new string(' ', 4 * charNum) + line[charNum..].TrimEnd();
+					if (lines[lineNum].Contains('\t'))
 					{
-						Debug.WriteLine("Unexpected tab on line " + lineNum.ToString() + ": " + lines[lineNum]);
+						Debug.WriteLine($"Unexpected tab on line {lineNum}: {lines[lineNum]}");
 					}
 				}
 			}

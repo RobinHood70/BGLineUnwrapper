@@ -3,14 +3,11 @@
 	using System;
 	using System.Text.RegularExpressions;
 
-	internal static class Common
+	internal static partial class Common
 	{
-		#region Fields
-		private static Regex SpaceTrimmer = new Regex(@"\ {2,}");
-		#endregion
-
-		#region Public Properties
-		public static Regex LocFinder { get; } = new Regex(@":?\s*(?<loc>\[.*?\d+\.\d+\])");
+		#region Public GeneratedRegexes
+		[GeneratedRegex(@":?\s*(?<loc>\[.*?\d+\.\d+\])")]
+		public static partial Regex LocFinder();
 		#endregion
 
 		#region Public Methods
@@ -20,11 +17,11 @@
 		{
 			if (text == null || text.Length < 2)
 			{
-				throw new ArgumentNullException();
+				throw new ArgumentNullException(nameof(text));
 			}
 
-			text = char.ToUpperInvariant(text[0]) + text.Substring(1);
-			text = SpaceTrimmer.Replace(text, " ");
+			text = char.ToUpperInvariant(text[0]) + text[1..];
+			text = SpaceTrimmer().Replace(text, " ");
 			return text
 				.Replace(" +", "\xA0+")
 				.Replace(" GP", "\xA0GP")
@@ -37,6 +34,11 @@
 		public static string LocFormatter(Match loc) => LocFormatter(loc.Groups["x"].Value, loc.Groups["y"].Value);
 
 		public static string LocFormatter(string x, string y) => $"[{x}.{y}]";
+		#endregion
+
+		#region Private GeneratedRegexes
+		[GeneratedRegex(@"\ {2,}")]
+		private static partial Regex SpaceTrimmer();
 		#endregion
 
 	}

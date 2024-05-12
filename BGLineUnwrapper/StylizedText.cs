@@ -1,24 +1,18 @@
 ﻿namespace LineUnwrapper
 {
-	internal class StylizedText
+	internal sealed class StylizedText(string? style, string text)
 	{
 		#region Constructors
 		public StylizedText(string text)
 			: this(null, text)
 		{
 		}
-
-		public StylizedText(string? style, string text)
-		{
-			this.Style = style;
-			this.Text = text;
-		}
 		#endregion
 
 		#region Public Properties
-		public string? Style { get; set; }
+		public string? Style { get; set; } = style;
 
-		public string Text { get; set; }
+		public string Text { get; set; } = text;
 		#endregion
 
 		#region Public Methods
