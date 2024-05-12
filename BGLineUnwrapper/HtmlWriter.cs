@@ -167,15 +167,12 @@
 			writer.Write('<' + tag);
 			if (attributes != null)
 			{
-				foreach (var (key, value) in attributes)
+				foreach (var attribute in attributes)
 				{
-					if (key != null && value != null)
+					if (attribute.Key != null && attribute.Value != null)
 					{
-						var newKey = this.AddNamespace(key);
-						var newValue = value[0] is '\'' or '\"'
-							? value
-							: '\"' + value + '\"';
-						writer.Write($" {newKey}={newValue}");
+						var newKey = this.AddNamespace(attribute.Key);
+						writer.Write($" {newKey}=\"{attribute.Value}\"");
 					}
 				}
 			}
