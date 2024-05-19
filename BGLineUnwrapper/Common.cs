@@ -1,43 +1,41 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
-	using System;
+	using System.Diagnostics.CodeAnalysis;
 	using System.Text.RegularExpressions;
 
 	internal static partial class Common
 	{
 		#region Public GeneratedRegexes
-		[GeneratedRegex(@":?\s*(?<loc>\[.*?\d+\.\d+\])")]
+		[GeneratedRegex(@":?\s*(?<loc>\[.*?\d+\.\d+\])", RegexOptions.ExplicitCapture, 10000)]
 		public static partial Regex LocFinder();
+
 		#endregion
 
 		#region Public Methods
 
 		// Simple implementation for now, since entire conversion process takes only seconds.
-		public static string HarmonizeText(string text)
+		public static string? HarmonizeSpacing(string? text)
 		{
-			if (text == null || text.Length < 2)
+			if (text is null)
 			{
-				throw new ArgumentNullException(nameof(text));
+				return null;
 			}
 
-			text = char.ToUpperInvariant(text[0]) + text[1..];
 			text = SpaceTrimmer().Replace(text, " ");
-			return text
-				.Replace(" +", "\xA0+")
-				.Replace(" GP", "\xA0GP")
-				.Replace(" HP", "\xA0HP")
-				.Replace(" XP", "\xA0XP")
-				.Replace("/ ", "/\u200b")
-				.Replace("/", "/\u200b");
+			text = HardSpaceReplacer().Replace(text, "\xA0$1");
+			return SlashReplacer().Replace(text, "/\u200b");
 		}
-
-		public static string LocFormatter(Match loc) => LocFormatter(loc.Groups["x"].Value, loc.Groups["y"].Value);
-
-		public static string LocFormatter(string x, string y) => $"[{x}.{y}]";
 		#endregion
 
 		#region Private GeneratedRegexes
-		[GeneratedRegex(@"\ {2,}")]
+		[SuppressMessage("Performance", "MA0023:Add RegexOptions.ExplicitCapture", Justification = "Not wanted.")]
+		[GeneratedRegex(@" (\+|GP|HP|QXP|XP)", RegexOptions.None, 10000)]
+		private static partial Regex HardSpaceReplacer();
+
+		[GeneratedRegex(@"/\s*", RegexOptions.None, 10000)]
+		private static partial Regex SlashReplacer();
+
+		[GeneratedRegex(@"\ {2,}", RegexOptions.None, 10000)]
 		private static partial Regex SpaceTrimmer();
 		#endregion
 

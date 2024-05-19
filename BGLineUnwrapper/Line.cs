@@ -1,4 +1,4 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System;
 
@@ -14,13 +14,20 @@
 	}
 	#endregion
 
-	public class Line(LineType lineType, string? prefix, string text)
+	public class Line
 	{
 		#region Static Fields
 		private static readonly char[] TrimChars = [' ', ',', '.'];
 		#endregion
 
-		#region Public Constructors
+		#region Constructors
+		public Line(LineType lineType, string? prefix, string text)
+		{
+			this.Prefix = Common.HarmonizeSpacing(prefix);
+			this.Text = Common.HarmonizeSpacing(text) ?? string.Empty;
+			this.Type = lineType;
+		}
+
 		public Line(LineType lineType, string text)
 			: this(lineType, null, text)
 		{
@@ -28,13 +35,11 @@
 		#endregion
 
 		#region Public Properties
-		public string? Prefix { get; } = prefix is null
-			? null
-			: Common.HarmonizeText(prefix);
+		public string? Prefix { get; }
 
-		public string Text { get; set; } = Common.HarmonizeText(text);
+		public string Text { get; set; }
 
-		public LineType Type { get; set; } = lineType;
+		public LineType Type { get; set; }
 		#endregion
 
 		#region Public Methods
@@ -56,10 +61,7 @@
 			else
 			{
 				var parens = " (" + areaName + ")";
-				if (this.Text.IndexOf(parens, StringComparison.OrdinalIgnoreCase) > -1)
-				{
-					this.Text = this.Text.Replace(parens, string.Empty);
-				}
+				this.Text = this.Text.Replace(parens, string.Empty, StringComparison.Ordinal);
 			}
 		}
 		#endregion

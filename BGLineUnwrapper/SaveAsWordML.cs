@@ -1,36 +1,22 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Globalization;
 	using System.IO;
+	using RobinHood70.CommonCode;
 
-	internal sealed class SaveAsWordML(StreamWriter writer) : SaveAs
+	internal sealed class SaveAsWordML(StreamWriter writer) : Saver
 	{
 		#region Fields
 		private readonly HtmlWriter htmlWriter = new(writer, "w");
 		#endregion
 
-		#region Protected Override Methods
-		protected override void Setup()
-		{
-			this.htmlWriter
-				.SelfClosingTag(":?xml", (":version", "1.0"), (":encoding", "UTF-8"), (":standalone", "yes"))
-				.SelfClosingTag(":?mso-application", (":progid", "Word.Document"))
-				.OpenTag("wordDocument", ("xmlns:w", "http://schemas.microsoft.com/office/word/2003/wordml"), ("xmlns:wx", "http://schemas.microsoft.com/office/word/2003/auxHint"), ("xmlns:o", "urn:schemas-microsoft-com:office:office"), ("macrosPresent", "no"), ("embeddedObjPresent", "no"), ("ocxPresent", "no"), ("xml:space", "preserve"));
-			this.EmitFonts();
-			this.EmitListDefs();
-			this.EmitStyles();
-			this.htmlWriter.OpenTag("body");
-		}
-
-		protected override void Shutdown() => this.htmlWriter.CloseTags(-1);
-
-		protected override void WriteBulletedListEnd()
+		#region Public Override Methods
+		public override void WriteBulletedListEnd()
 		{
 		}
 
-		protected override void WriteBulletedListItem(string text)
+		public override void WriteBulletedListItem(string text)
 		{
 			this.htmlWriter
 				.OpenTag("p")
@@ -39,17 +25,17 @@
 				.SelfClosingTag("ilvl", ("val", "0"))
 				.SelfClosingTag("ilfo", ("val", "1"))
 				.CloseTags(2);
-			this.WriteStylizedText(StylizeLocations(text));
+			this.WriteStylizedText(StylizedText.StylizeLocations(text));
 			this.htmlWriter.CloseTag();
 		}
 
-		protected override void WriteBulletedListStart()
+		public override void WriteBulletedListStart()
 		{
 		}
 
-		protected override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteParagraph(new Paragraph($"heading{level}", text));
+		public override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteParagraph(new Paragraph($"heading{level.ToStringInvariant()}", text));
 
-		protected override void WriteParagraph(Paragraph paragraph)
+		public override void WriteParagraph(Paragraph paragraph)
 		{
 			this.htmlWriter.OpenTag("p");
 			if (!string.IsNullOrEmpty(paragraph.Style))
@@ -64,7 +50,7 @@
 			this.htmlWriter.CloseTag();
 		}
 
-		protected override void WriteStylizedText(string? style, string text)
+		public override void WriteStylizedText(string? style, string text)
 		{
 			if (string.IsNullOrEmpty(text))
 			{
@@ -77,7 +63,7 @@
 				this.htmlWriter
 					.OpenTag("rPr")
 					.SelfClosingTag("rStyle", ("val", style));
-				if (style == "location")
+				if (string.Equals(style, "location", StringComparison.Ordinal))
 				{
 					this.htmlWriter.SelfClosingTag("b", ("val", "off"));
 				}
@@ -90,7 +76,7 @@
 				.CloseTag();
 		}
 
-		protected override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
+		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
 		{
 			this.htmlWriter.OpenTag("tc");
 			if (mergeCount > 1)
@@ -130,9 +116,9 @@
 			}
 		}
 
-		protected override void WriteTableEnd() => this.htmlWriter.CloseTag();
+		public override void WriteTableEnd() => this.htmlWriter.CloseTag();
 
-		protected override void WriteTableHeader(params (string, int)[] titles)
+		public override void WriteTableHeader(params (string, int)[] titles)
 		{
 			this.WriteTableRowStart();
 			foreach (var (title, _) in titles)
@@ -143,11 +129,11 @@
 			this.WriteTableRowEnd();
 		}
 
-		protected override void WriteTableRowEnd() => this.htmlWriter.CloseTag();
+		public override void WriteTableRowEnd() => this.htmlWriter.CloseTag();
 
-		protected override void WriteTableRowStart() => this.htmlWriter.OpenTag("tr");
+		public override void WriteTableRowStart() => this.htmlWriter.OpenTag("tr");
 
-		protected override void WriteTableStart(string style, int percentWidth) => this.htmlWriter
+		public override void WriteTableStart(string style, int percentWidth) => this.htmlWriter
 			.OpenTag("tbl")
 			.OpenTag("tblPr")
 			.SelfClosingTag("tblStyle", ("val", style))
@@ -156,10 +142,26 @@
 			.CloseTag();
 		#endregion
 
+		#region Protected Override Methods
+		protected override void Setup()
+		{
+			this.htmlWriter
+				.SelfClosingTag(":?xml", (":version", "1.0"), (":encoding", "UTF-8"), (":standalone", "yes"))
+				.SelfClosingTag(":?mso-application", (":progid", "Word.Document"))
+				.OpenTag("wordDocument", ("xmlns:w", "http://schemas.microsoft.com/office/word/2003/wordml"), ("xmlns:wx", "http://schemas.microsoft.com/office/word/2003/auxHint"), ("xmlns:o", "urn:schemas-microsoft-com:office:office"), ("macrosPresent", "no"), ("embeddedObjPresent", "no"), ("ocxPresent", "no"), ("xml:space", "preserve"));
+			this.EmitFonts();
+			this.EmitListDefs();
+			this.EmitStyles();
+			this.htmlWriter.OpenTag("body");
+		}
+
+		protected override void Shutdown() => this.htmlWriter.CloseTags(-1);
+		#endregion
+
 		#region Private Static Methods
 		private static string InchesToTwips(double inches) => IntString(inches * 1440);
 
-		private static string IntString(double number) => ((int)Math.Round(number)).ToString(CultureInfo.InvariantCulture);
+		private static string IntString(double number) => ((int)Math.Round(number)).ToStringInvariant();
 
 		private static string PointsToEtips(double points) => IntString(points * 8);
 

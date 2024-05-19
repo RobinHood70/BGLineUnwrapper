@@ -1,9 +1,9 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System.Collections;
 	using System.Collections.Generic;
 
-	internal sealed class Paragraph(string? style, IEnumerable<StylizedText> text) : IList<StylizedText>
+	public sealed class Paragraph(string? style, IEnumerable<StylizedText> text) : IList<StylizedText>
 	{
 		#region Fields
 		private readonly IList<StylizedText> text = text is IList<StylizedText> listText ? listText : new List<StylizedText>(text);
@@ -37,12 +37,17 @@
 		}
 		#endregion
 
+		#region Public Static Methds
+		public static Paragraph FromText(string text) => new(null, StylizedText.StylizeLocations(text));
+
+		#endregion
+
 		#region Public Methods
 		public void Add(string text) => this.Add(new StylizedText(text));
 
 		public void Add(StylizedText item)
 		{
-			if (this.text.Count > 0 && this.text[this.text.Count - 1] is var last && item.Style == last.Style)
+			if (this.text.Count > 0 && this.text[this.text.Count - 1] is var last && string.Equals(item.Style, last.Style, System.StringComparison.Ordinal))
 			{
 				last.Text += item.Text;
 			}
@@ -54,9 +59,9 @@
 
 		public void Add(IEnumerable<StylizedText> texts)
 		{
-			foreach (var text in texts)
+			foreach (var stylizedText in texts)
 			{
-				this.Add(text);
+				this.Add(stylizedText);
 			}
 		}
 

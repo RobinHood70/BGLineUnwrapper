@@ -1,8 +1,10 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Globalization;
 	using System.Text.RegularExpressions;
+	using RobinHood70.CommonCode;
 
 	public partial class Companion
 	{
@@ -48,7 +50,7 @@
 				}
 
 				text = text[1..];
-				this.Description = Common.HarmonizeText(text);
+				this.Description = Common.HarmonizeSpacing(text.UpperFirst(CultureInfo.CurrentCulture));
 			}
 		}
 		#endregion
@@ -77,9 +79,10 @@
 		public string Strength { get; }
 
 		public string Wisdom { get; }
+		#endregion
 
-
-		[GeneratedRegex(@"\A(?<name>.*?)\s+(?<str>\d+(/\d+)?)\s+(?<dex>\d+)\s+(?<con>\d+)\s+(?<int>\d+)\s+(?<wis>\d+)\s+(?<cha>\d+)\s+(?<race>.*?)\s{2,}(?<class>.*?)\s+(?<align>.*?)\s*\Z")]
+		#region Private Static GeneratedRegexes
+		[GeneratedRegex(@"\A(?<name>.*?)\s+(?<str>\d+(/\d+)?)\s+(?<dex>\d+)\s+(?<con>\d+)\s+(?<int>\d+)\s+(?<wis>\d+)\s+(?<cha>\d+)\s+(?<race>.*?)\s{2,}(?<class>.*?)\s+(?<align>.*?)\s*\Z", RegexOptions.ExplicitCapture, 10000)]
 		private static partial Regex StatParser();
 		#endregion
 	}

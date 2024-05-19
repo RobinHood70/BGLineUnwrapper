@@ -1,4 +1,4 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System;
 	using System.Collections.Generic;
@@ -147,7 +147,7 @@
 		#region Private Methods
 		private string AddNamespace(string text) =>
 			text[0] == ':' ? text[1..] :
-			(this.DefaultNamespace == null || text.Contains(':')) ? text :
+			(this.DefaultNamespace == null || text.Contains(':', StringComparison.Ordinal)) ? text :
 			this.DefaultNamespace + ':' + text;
 
 		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<Attribute>? attributes)

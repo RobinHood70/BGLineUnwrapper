@@ -1,6 +1,8 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
-	internal sealed class StylizedText(string? style, string text)
+	using System.Collections.Generic;
+
+	public sealed class StylizedText(string? style, string text)
 	{
 		#region Constructors
 		public StylizedText(string text)
@@ -13,6 +15,29 @@
 		public string? Style { get; set; } = style;
 
 		public string Text { get; set; } = text;
+		#endregion
+
+		#region Public Static Methods
+
+		public static IEnumerable<StylizedText> StylizeLocations(string text) => StylizeLocations(null, text);
+
+		public static IEnumerable<StylizedText> StylizeLocations(string? defaultStyle, string text)
+		{
+			if (text != null)
+			{
+				var split = Common.LocFinder().Split(text);
+				var isLoc = false;
+				foreach (var line in split)
+				{
+					if (!string.IsNullOrEmpty(line))
+					{
+						yield return new StylizedText(isLoc ? "location" : defaultStyle, line);
+					}
+
+					isLoc = !isLoc;
+				}
+			}
+		}
 		#endregion
 
 		#region Public Methods

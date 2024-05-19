@@ -1,81 +1,27 @@
 ﻿namespace BGLineUnwrapper
 {
 	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
 	using System.IO;
-	using System.Text;
-	using LineUnwrapper;
 
-	internal static class Program
+	internal static partial class Program
 	{
 		#region Public Methods
 		public static void Main(string[] args)
 		{
-			var filename = args.Length > 0 ? args[0] : @"D:\Users\rmorl\Documents\Games\Baldur's Gate\BG Walkthrough.txt";
-			var option = args.Length > 1 ? args[1] : "BG1";
-			var text = File.ReadAllText(filename, Encoding.UTF8); // Encoding.GetEncoding(1252)
-			var parsedFile = option switch
+			var option = args.Length > 0 ? args[0] : "BG2";
+			BGDom dom = option switch
 			{
-				"BG1" => ConvertBG1(text),
+				"BG1" => BG1Dom.FromFile(@"C:\Users\rmorl\Documents\Games\Baldur's Gate\BG Walkthrough.txt"),
+				"BG2" => BG2Dom.FromFile(@"C:\Users\rmorl\Documents\Games\Baldur's Gate 2\Walkthrough.txt"),
 				_ => throw new InvalidOperationException()
 			};
 
 			var doWord = true;
 			using var writer = File.CreateText(@"D:\Output." + (doWord ? "xml" : "htm"));
-			var saver = doWord ? (SaveAs)new SaveAsWordML(writer) : new SaveAsHtml(writer);
-			saver.Save(parsedFile);
-		}
-		#endregion
-
-		#region Private Methods
-		private static List<Section> ConvertBG1(string text)
-		{
-			var newText = new List<Section>();
-			text = HarmonizeText(text);
-			var sectionTexts = text.Split(new[] { "\n\n\n" + Section.Divider + "\n" }, StringSplitOptions.None);
-			if (sectionTexts.Length == 0)
-			{
-				throw new InvalidOperationException("No sections!");
-			}
-
-			foreach (var sectionText in sectionTexts)
-			{
-				var section = new Section(sectionText);
-				newText.Add(section);
-			}
-
-			return newText;
-		}
-
-		private static string HarmonizeText(string text)
-		{
-			var lines = new List<string>(text.Split('\n'));
-			if (lines[0][0] == '-')
-			{
-				lines.RemoveAt(0);
-			}
-
-			for (var lineNum = 0; lineNum < lines.Count; lineNum++)
-			{
-				var line = lines[lineNum];
-				if (line.Length > 0)
-				{
-					var charNum = 0;
-					while (charNum < line.Length && line[charNum] == '\t')
-					{
-						charNum++;
-					}
-
-					lines[lineNum] = new string(' ', 4 * charNum) + line[charNum..].TrimEnd();
-					if (lines[lineNum].Contains('\t'))
-					{
-						Debug.WriteLine($"Unexpected tab on line {lineNum}: {lines[lineNum]}");
-					}
-				}
-			}
-
-			return string.Join("\n", lines);
+			Saver saver = doWord
+				? new SaveAsWordML(writer)
+				: new SaveAsHtml(writer);
+			saver.Save(dom);
 		}
 		#endregion
 	}

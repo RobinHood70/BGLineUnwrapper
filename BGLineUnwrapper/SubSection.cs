@@ -1,22 +1,26 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System;
 	using System.Collections.Generic;
 
 	public class Subsection
 	{
+		#region Fields
+		private readonly List<Line> lines;
+		#endregion
+
 		#region Constructors
-		public Subsection(Line? title, List<Line> lines)
+		public Subsection(Line? title, IEnumerable<Line> lines)
 		{
 			this.Title = title;
-			this.Lines = lines;
+			this.lines = new List<Line>(lines);
 		}
 
-		public Subsection(List<Line> lines, bool checkForTitle)
+		public Subsection(IEnumerable<Line> lines, bool checkForTitle)
 		{
 			if (checkForTitle)
 			{
-				this.Lines = [];
+				this.lines = [];
 				foreach (var line in lines)
 				{
 					if (line.Type == LineType.Title)
@@ -25,19 +29,19 @@
 					}
 					else
 					{
-						this.Lines.Add(line);
+						this.lines.Add(line);
 					}
 				}
 			}
 			else
 			{
-				this.Lines = lines;
+				this.lines = new List<Line>(lines);
 			}
 		}
 		#endregion
 
 		#region Public Properties
-		public List<Line> Lines { get; }
+		public IReadOnlyList<Line> Lines => this.lines;
 
 		public Line? Title { get; set; }
 		#endregion
@@ -94,19 +98,19 @@
 				if (index > -1)
 				{
 					index += searchLine.Prefix.Length;
-					while (index < line.Text.Length && !" \n".Contains(line.Text[index]))
+					while (index < line.Text.Length && !" \n".Contains(line.Text[index], StringComparison.Ordinal))
 					{
 						index++;
 					}
 
 					var insertText = searchLine.Text
-						.Replace("[", " ")
-						.Replace("  ", " ")
-						.Replace("]", string.Empty)
+						.Replace('[', ' ')
+						.Replace("  ", " ", StringComparison.Ordinal)
+						.Replace("]", string.Empty, StringComparison.Ordinal)
 						.Trim();
 					insertText = '[' + insertText + ']';
 					line.Text = line.Text.Insert(index, insertText);
-					this.Lines.RemoveAt(lineNum);
+					this.lines.RemoveAt(lineNum);
 					return true;
 				}
 			}

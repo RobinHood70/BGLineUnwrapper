@@ -1,13 +1,104 @@
-﻿namespace LineUnwrapper
+﻿namespace BGLineUnwrapper
 {
 	using System.Collections.Generic;
-	using System.Globalization;
 	using System.IO;
+	using RobinHood70.CommonCode;
 
-	internal sealed class SaveAsHtml(StreamWriter writer) : SaveAs
+	internal sealed class SaveAsHtml(StreamWriter writer) : Saver
 	{
 		#region Fields
 		private readonly HtmlWriter htmlWriter = new(writer);
+		#endregion
+
+		#region Public Override Methods
+		public override void WriteBulletedListEnd() => this.htmlWriter.CloseTag();
+
+		public override void WriteBulletedListItem(string text) => this.WriteTextTag("li", StylizedText.StylizeLocations(text));
+
+		public override void WriteBulletedListStart() => this.htmlWriter.OpenTag("ul");
+
+		public override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteTextTag($"h{level.ToStringInvariant()}", text);
+
+		public override void WriteParagraph(Paragraph paragraph) => this.WriteTextTag("p", paragraph, ("class", paragraph.Style));
+
+		public override void WriteStylizedText(string? style, string text)
+		{
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+
+			if (style == null)
+			{
+				this.htmlWriter.WriteText(text);
+			}
+			else
+			{
+				this.htmlWriter.TextTagInline("span", text, ("class", style));
+			}
+		}
+
+		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
+		{
+			var attrs = new List<Attribute> { new("class", style) };
+			if (mergeCount > 1)
+			{
+				attrs.Add(("colspan", mergeCount.ToStringInvariant()));
+			}
+
+			this.htmlWriter.OpenTextTag("td", attrs);
+			if (paragraphs is not List<Paragraph> newParas)
+			{
+				newParas = new List<Paragraph>(paragraphs);
+			}
+
+			if (newParas.Count == 1)
+			{
+				this.WriteStylizedText(newParas[0]);
+			}
+			else
+			{
+				foreach (var para in paragraphs)
+				{
+					this.WriteParagraph(para);
+				}
+			}
+
+			this.htmlWriter.CloseTag();
+		}
+
+		public override void WriteTableEnd() => this.htmlWriter.CloseTag();
+
+		public override void WriteTableHeader(params (string Title, int Width)[] titles)
+		{
+			this.htmlWriter.OpenTag("tr");
+			foreach (var (title, _) in titles)
+			{
+				// CONSIDER: Handle width (currently _)?
+				this.htmlWriter.TextTag("th", title);
+			}
+
+			this.htmlWriter.CloseTag();
+		}
+
+		public override void WriteTableRowEnd() => this.htmlWriter.CloseTag();
+
+		public override void WriteTableRowStart() => this.htmlWriter.OpenTag("tr");
+
+		public override void WriteTableStart(string type, int percentWidth)
+		{
+			var attributes = new List<Attribute>()
+			{
+				("class", type)
+			};
+
+			if (percentWidth != 0)
+			{
+				attributes.Add(("style", $"width:{percentWidth.ToStringInvariant()}%"));
+			}
+
+			this.htmlWriter.OpenTag("table", [.. attributes]);
+		}
 		#endregion
 
 		#region Protected Override Methods
@@ -37,95 +128,6 @@
 			.OpenTag("body");
 
 		protected override void Shutdown() => this.htmlWriter.CloseTags(-1);
-
-		protected override void WriteBulletedListEnd() => this.htmlWriter.CloseTag();
-
-		protected override void WriteBulletedListItem(string text) => this.WriteTextTag("li", StylizeLocations(text));
-
-		protected override void WriteBulletedListStart() => this.htmlWriter.OpenTag("ul");
-
-		protected override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteTextTag($"h{level}", text);
-
-		protected override void WriteParagraph(Paragraph paragraph) => this.WriteTextTag("p", paragraph, ("class", paragraph.Style));
-
-		protected override void WriteStylizedText(string? style, string text)
-		{
-			if (string.IsNullOrEmpty(text))
-			{
-				return;
-			}
-
-			if (style == null)
-			{
-				this.htmlWriter.WriteText(text);
-			}
-			else
-			{
-				this.htmlWriter.TextTagInline("span", text, ("class", style));
-			}
-		}
-
-		protected override void WriteTableEnd() => this.htmlWriter.CloseTag();
-
-		protected override void WriteTableHeader(params (string Title, int Width)[] titles)
-		{
-			this.htmlWriter.OpenTag("tr");
-			foreach (var (title, _) in titles)
-			{
-				// CONSIDER: Handle width (currently _)?
-				this.htmlWriter.TextTag("th", title);
-			}
-
-			this.htmlWriter.CloseTag();
-		}
-
-		protected override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
-		{
-			var attrs = new List<Attribute> { new("class", style) };
-			if (mergeCount > 1)
-			{
-				attrs.Add(("colspan", mergeCount.ToString(CultureInfo.InvariantCulture)));
-			}
-
-			this.htmlWriter.OpenTextTag("td", attrs);
-			if (paragraphs is not List<Paragraph> newParas)
-			{
-				newParas = new List<Paragraph>(paragraphs);
-			}
-
-			if (newParas.Count == 1)
-			{
-				this.WriteStylizedText(newParas[0]);
-			}
-			else
-			{
-				foreach (var para in paragraphs)
-				{
-					this.WriteParagraph(para);
-				}
-			}
-
-			this.htmlWriter.CloseTag();
-		}
-
-		protected override void WriteTableRowEnd() => this.htmlWriter.CloseTag();
-
-		protected override void WriteTableRowStart() => this.htmlWriter.OpenTag("tr");
-
-		protected override void WriteTableStart(string type, int percentWidth)
-		{
-			var attributes = new List<Attribute>()
-			{
-				("class", type)
-			};
-
-			if (percentWidth != 0)
-			{
-				attributes.Add(("style", $"width:{percentWidth}%"));
-			}
-
-			this.htmlWriter.OpenTag("table", [.. attributes]);
-		}
 		#endregion
 
 		#region Private Methods
