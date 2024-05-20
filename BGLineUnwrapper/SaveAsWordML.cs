@@ -33,9 +33,9 @@
 		{
 		}
 
-		public override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteParagraph(new Paragraph($"heading{level.ToStringInvariant()}", text));
+		public override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteParagraph(new StylizedParagraph($"heading{level.ToStringInvariant()}", text));
 
-		public override void WriteParagraph(Paragraph paragraph)
+		public override void WriteParagraph(StylizedParagraph paragraph)
 		{
 			this.htmlWriter.OpenTag("p");
 			if (!string.IsNullOrEmpty(paragraph.Style))
@@ -76,7 +76,7 @@
 				.CloseTag();
 		}
 
-		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
+		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<StylizedParagraph> paragraphs)
 		{
 			this.htmlWriter.OpenTag("tc");
 			if (mergeCount > 1)
@@ -123,7 +123,7 @@
 			this.WriteTableRowStart();
 			foreach (var (title, _) in titles)
 			{
-				this.WriteTableCell(new Paragraph("title", title));
+				this.WriteTableCell(new StylizedParagraph("title", title));
 			}
 
 			this.WriteTableRowEnd();

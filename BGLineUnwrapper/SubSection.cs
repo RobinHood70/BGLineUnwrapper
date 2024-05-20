@@ -3,64 +3,20 @@
 	using System;
 	using System.Collections.Generic;
 
-	public class Subsection
+	public class Subsection(Line? title, IEnumerable<Line> lines)
 	{
 		#region Fields
-		private readonly List<Line> lines;
-		#endregion
-
-		#region Constructors
-		public Subsection(Line? title, IEnumerable<Line> lines)
-		{
-			this.Title = title;
-			this.lines = new List<Line>(lines);
-		}
-
-		public Subsection(IEnumerable<Line> lines, bool checkForTitle)
-		{
-			if (checkForTitle)
-			{
-				this.lines = [];
-				foreach (var line in lines)
-				{
-					if (line.Type == LineType.Title)
-					{
-						this.Title = line;
-					}
-					else
-					{
-						this.lines.Add(line);
-					}
-				}
-			}
-			else
-			{
-				this.lines = new List<Line>(lines);
-			}
-		}
+		private readonly List<Line> lines = new(lines);
 		#endregion
 
 		#region Public Properties
 		public IReadOnlyList<Line> Lines => this.lines;
 
-		public Line? Title { get; set; }
+		public Line? Title { get; set; } = title;
 		#endregion
 
 		#region Public Methods
-		public void TrimAreaName(string areaName)
-		{
-			this.Title?.TrimAreaName(areaName);
-			foreach (var line in this.Lines)
-			{
-				line.TrimAreaName(areaName);
-			}
-
-			this.ReparseLocations();
-		}
-		#endregion
-
-		#region Private Methods
-		private void ReparseLocations()
+		public void ReparseLocations()
 		{
 			if (this.Lines.Count == 0)
 			{
@@ -89,7 +45,9 @@
 				lineNum--;
 			}
 		}
+		#endregion
 
+		#region Private Methods
 		private bool MoveLocation(Line? line, int lineNum, Line searchLine)
 		{
 			if (line != null && searchLine.Prefix != null)

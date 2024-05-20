@@ -1,17 +1,19 @@
 ﻿namespace BGLineUnwrapper
 {
 	using System;
+	using System.Collections;
 	using System.Collections.Generic;
-	using System.Collections.ObjectModel;
 	using System.Diagnostics;
-	using System.Text.RegularExpressions;
 	using RobinHood70.CommonCode;
 
-	public partial class BGDom(IList<Section> sections) : ReadOnlyCollection<Section>(sections)
+	public class BGDom : IEnumerable<Section>
 	{
-		#region Protected Static GeneratedRegexes
-		[GeneratedRegex(@"\n{2,}-{75,}\s*(?<title>[^\n]+)\n+-{75,}\n", RegexOptions.ExplicitCapture | RegexOptions.Compiled, 10000)]
-		public static partial Regex SectionSplitter();
+		#region Fields
+		private readonly List<Section> sections = [];
+		#endregion
+
+		#region Public Properties
+		public IDictionary<string, RegionCreator> RegionCreators { get; } = new Dictionary<string, RegionCreator>(StringComparer.Ordinal);
 		#endregion
 
 		#region Protected Static Methods
@@ -46,7 +48,22 @@
 
 			return string.Join('\n', lines);
 		}
+		#endregion
 
+		#region Public Methods
+		public void AddSections(IEnumerable<Section> sections)
+		{
+			ArgumentNullException.ThrowIfNull(sections);
+			this.sections.AddRange(sections);
+		}
+
+		public IEnumerator<Section> GetEnumerator() => ((IEnumerable<Section>)this.sections).GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => this.sections.GetEnumerator();
+		#endregion
+
+		#region Internal Methods
+		internal void Register(string key, RegionCreator creator) => this.RegionCreators[key] = creator;
 		#endregion
 	}
 }

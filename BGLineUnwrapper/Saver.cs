@@ -12,91 +12,31 @@
 		#endregion
 
 		#region Public Methods
-		public void EmitLines(IReadOnlyCollection<Line>? lines)
+		public void EmitSubsection(Subsection subsection)
 		{
-			if (lines is null || lines.Count == 0)
+			if (subsection.Title is not null)
+			{
+				this.WriteHeader(3, StylizedText.StylizeLocations(subsection.Title.Text));
+			}
+
+			this.EmitLines(subsection.Lines);
+		}
+
+		public void EmitSubsections(string? title, IReadOnlyCollection<Subsection>? subsections)
+		{
+			if (subsections is null || subsections.Count == 0)
 			{
 				return;
 			}
 
-			foreach (var line in lines)
+			if (title is not null)
 			{
-				var text = StylizedText.StylizeLocations(line.Text);
-				switch (line.Type)
-				{
-					case LineType.Colon:
-						var output = new List<StylizedText>(text);
-						var para = new Paragraph("single")
-						{
-							new StylizedText("bold", line.Prefix ?? throw new InvalidOperationException())
-						};
-						if (output.Count > 0 && !string.Equals(output[0].Style, "location", StringComparison.Ordinal))
-						{
-							para.Add(new StylizedText(":\xA0"));
-						}
-
-						para.Add(output);
-						this.WriteParagraph(para);
-						break;
-					case LineType.Dashed:
-						this.WriteParagraph(new Paragraph("single")
-						{
-							new StylizedText("bold", line.Prefix ?? throw new InvalidOperationException()),
-							"—",
-							text
-						});
-						break;
-					case LineType.Note:
-						this.WriteParagraph(new Paragraph("note", text));
-						break;
-					case LineType.Plain:
-						this.WriteParagraph(new Paragraph(null, text));
-						break;
-					case LineType.Tip:
-						this.WriteParagraph(new Paragraph("tip", text));
-						break;
-					case LineType.Title:
-						this.WriteHeader(3, text);
-						break;
-				}
+				this.WriteHeader(2, title);
 			}
-		}
 
-		public void EmitPlainText(IEnumerable<Subsection> subsections)
-		{
 			foreach (var subsection in subsections)
 			{
-				if (subsection.Title != null)
-				{
-					this.WriteHeader(2, subsection.Title.Text);
-				}
-
-				this.WriteBulletedListStart();
-				foreach (var line in subsection.Lines)
-				{
-					this.WriteBulletedListItem(line.Text);
-				}
-
-				this.WriteBulletedListEnd();
-			}
-		}
-
-		public void EmitSubsections(string title, IReadOnlyCollection<Subsection> subsections)
-		{
-			if (subsections.Count == 0)
-			{
-				return;
-			}
-
-			this.WriteHeader(2, title);
-			foreach (var subsection in subsections)
-			{
-				if (subsection.Title != null)
-				{
-					this.WriteHeader(3, StylizedText.StylizeLocations(subsection.Title.Text));
-				}
-
-				this.EmitLines(subsection.Lines);
+				this.EmitSubsection(subsection);
 			}
 		}
 
@@ -111,7 +51,7 @@
 			this.Shutdown();
 		}
 
-		public void WriteHeader(int level, string text) => this.WriteHeader(level, new Paragraph(null, text));
+		public void WriteHeader(int level, string text) => this.WriteHeader(level, new StylizedParagraph(null, text));
 
 		public void WriteStylizedText(IEnumerable<StylizedText> text)
 		{
@@ -134,9 +74,9 @@
 			this.WriteStylizedText(lastStyle, writeText);
 		}
 
-		public void WriteTableCell(Paragraph paragraph) => this.WriteTableCell(null, 1, [paragraph]);
+		public void WriteTableCell(StylizedParagraph paragraph) => this.WriteTableCell(null, 1, [paragraph]);
 
-		public void WriteTableCell(string style, string text) => this.WriteTableCell(null, 1, [new Paragraph(style, text)]);
+		public void WriteTableCell(string style, string text) => this.WriteTableCell(null, 1, [new StylizedParagraph(style, text)]);
 		#endregion
 
 		#region Public Abstract Methods
@@ -149,11 +89,11 @@
 
 		public abstract void WriteHeader(int level, IEnumerable<StylizedText> text);
 
-		public abstract void WriteParagraph(Paragraph paragraph);
+		public abstract void WriteParagraph(StylizedParagraph paragraph);
 
 		public abstract void WriteStylizedText(string? style, string text);
 
-		public abstract void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs);
+		public abstract void WriteTableCell(string? style, int mergeCount, IEnumerable<StylizedParagraph> paragraphs);
 
 		public abstract void WriteTableEnd();
 
@@ -170,6 +110,63 @@
 		protected abstract void Setup();
 
 		protected abstract void Shutdown();
+		#endregion
+
+		#region Private Methods
+		private void EmitLine(Line line)
+		{
+			var text = StylizedText.StylizeLocations(line.Text);
+			switch (line.Type)
+			{
+				case LineType.Colon:
+					var output = new List<StylizedText>(text);
+					var para = new StylizedParagraph("single")
+						{
+							new StylizedText("bold", line.Prefix ?? throw new InvalidOperationException())
+						};
+					if (output.Count > 0 && !string.Equals(output[0].Style, "location", StringComparison.Ordinal))
+					{
+						para.Add(new StylizedText(":\xA0"));
+					}
+
+					para.Add(output);
+					this.WriteParagraph(para);
+					break;
+				case LineType.Dashed:
+					this.WriteParagraph(new StylizedParagraph("single")
+						{
+							new StylizedText("bold", line.Prefix ?? throw new InvalidOperationException()),
+							"—",
+							text
+						});
+					break;
+				case LineType.Note:
+					this.WriteParagraph(new StylizedParagraph("note", text));
+					break;
+				case LineType.Plain:
+					this.WriteParagraph(new StylizedParagraph(null, text));
+					break;
+				case LineType.Tip:
+					this.WriteParagraph(new StylizedParagraph("tip", text));
+					break;
+				case LineType.Title:
+					this.WriteHeader(3, text);
+					break;
+			}
+		}
+
+		private void EmitLines(IReadOnlyCollection<Line>? lines)
+		{
+			if (lines is null || lines.Count == 0)
+			{
+				return;
+			}
+
+			foreach (var line in lines)
+			{
+				this.EmitLine(line);
+			}
+		}
 		#endregion
 	}
 }

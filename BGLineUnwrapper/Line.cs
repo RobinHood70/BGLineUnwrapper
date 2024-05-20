@@ -14,20 +14,13 @@
 	}
 	#endregion
 
-	public class Line
+	public class Line(LineType lineType, string? prefix, string text)
 	{
 		#region Static Fields
 		private static readonly char[] TrimChars = [' ', ',', '.'];
 		#endregion
 
 		#region Constructors
-		public Line(LineType lineType, string? prefix, string text)
-		{
-			this.Prefix = Common.HarmonizeSpacing(prefix);
-			this.Text = Common.HarmonizeSpacing(text) ?? string.Empty;
-			this.Type = lineType;
-		}
-
 		public Line(LineType lineType, string text)
 			: this(lineType, null, text)
 		{
@@ -35,11 +28,11 @@
 		#endregion
 
 		#region Public Properties
-		public string? Prefix { get; }
+		public string? Prefix { get; } = prefix is null ? null : Common.HarmonizeSpacing(prefix);
 
-		public string Text { get; set; }
+		public string Text { get; set; } = Common.HarmonizeSpacing(text) ?? string.Empty;
 
-		public LineType Type { get; set; }
+		public LineType Type { get; set; } = lineType;
 		#endregion
 
 		#region Public Methods

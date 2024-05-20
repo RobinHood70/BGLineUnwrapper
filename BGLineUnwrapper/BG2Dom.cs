@@ -5,13 +5,13 @@
 	using System.IO;
 	using System.Text;
 
-	internal sealed class BG2Dom(IList<Section> sections) : BGDom(sections)
+	internal sealed class BG2Dom : BGDom
 	{
 		public static BG2Dom FromFile(string fileName)
 		{
 			var text = File.ReadAllText(fileName, Encoding.UTF8); // Encoding.GetEncoding(1252)
 			text = HarmonizeText(text);
-			var split = SectionSplitter().Split(text);
+			var split = GeneratedRegexes.SectionSplitter().Split(text);
 			if (split.Length < 2)
 			{
 				throw new InvalidOperationException("No sections!");
@@ -24,6 +24,7 @@
 				index++;
 			}
 
+			var dom = new BG2Dom();
 			var sections = new List<Section>();
 			while (index < split.Length)
 			{
@@ -43,7 +44,8 @@
 				index += 2;
 			}
 
-			return new BG2Dom(sections);
+			dom.AddSections(sections);
+			return dom;
 		}
 	}
 }

@@ -3,16 +3,15 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Globalization;
-	using System.Text.RegularExpressions;
 	using RobinHood70.CommonCode;
 
-	public partial class Companion
+	public class Companion
 	{
 		#region Constructors
 		public Companion(IEnumerable<string> lines)
 		{
 			var list = new List<string>(lines);
-			var stats = StatParser().Match(list[0]);
+			var stats = GeneratedRegexes.StatParser().Match(list[0]);
 			if (!stats.Success)
 			{
 				throw new InvalidOperationException("Invalid stats line!");
@@ -32,7 +31,7 @@
 			var lastLine = list.Count - 1;
 			if (list[lastLine].StartsWith("Where ", StringComparison.Ordinal))
 			{
-				var match = Common.LocFinder().Match(list[lastLine]);
+				var match = GeneratedRegexes.BracketedLocFinder().Match(list[lastLine]);
 				if (match.Success)
 				{
 					this.Location = match.Groups["loc"].Value;
@@ -81,9 +80,40 @@
 		public string Wisdom { get; }
 		#endregion
 
-		#region Private Static GeneratedRegexes
-		[GeneratedRegex(@"\A(?<name>.*?)\s+(?<str>\d+(/\d+)?)\s+(?<dex>\d+)\s+(?<con>\d+)\s+(?<int>\d+)\s+(?<wis>\d+)\s+(?<cha>\d+)\s+(?<race>.*?)\s{2,}(?<class>.*?)\s+(?<align>.*?)\s*\Z", RegexOptions.ExplicitCapture, 10000)]
-		private static partial Regex StatParser();
+		#region Public Methods
+		public void Save(Saver saver)
+		{
+			saver.WriteTableRowStart();
+			var companionName = new StylizedParagraph("companionname")
+				{
+					this.Name
+				};
+			if (this.Location != null)
+			{
+				companionName.Add(new StylizedText("location", this.Location));
+			}
+
+			saver.WriteTableCell(companionName);
+			var infoText =
+				this.Race.Replace(' ', '\xA0') +
+				" " +
+				this.Class.Replace(' ', '\xA0');
+			saver.WriteTableCell("companion", infoText);
+			saver.WriteTableCell("companion", this.Alignment.Replace(' ', '\xA0'));
+			saver.WriteTableCell("companion", this.Strength);
+			saver.WriteTableCell("companion", this.Dexterity);
+			saver.WriteTableCell("companion", this.Constitution);
+			saver.WriteTableCell("companion", this.Intelligence);
+			saver.WriteTableCell("companion", this.Wisdom);
+			saver.WriteTableCell("companion", this.Charisma);
+			saver.WriteTableRowEnd();
+			if (this.Description != null)
+			{
+				saver.WriteTableRowStart();
+				saver.WriteTableCell(null, 9, [StylizedParagraph.FromText(this.Description)]);
+				saver.WriteTableRowEnd();
+			}
+		}
 		#endregion
 	}
 }

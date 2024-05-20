@@ -25,7 +25,7 @@
 		{
 			if (text != null)
 			{
-				var split = Common.LocFinder().Split(text);
+				var split = GeneratedRegexes.BracketedLocFinder().Split(text);
 				var isLoc = false;
 				foreach (var line in split)
 				{

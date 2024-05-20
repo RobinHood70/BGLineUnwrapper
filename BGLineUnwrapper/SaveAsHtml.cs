@@ -19,7 +19,7 @@
 
 		public override void WriteHeader(int level, IEnumerable<StylizedText> text) => this.WriteTextTag($"h{level.ToStringInvariant()}", text);
 
-		public override void WriteParagraph(Paragraph paragraph) => this.WriteTextTag("p", paragraph, ("class", paragraph.Style));
+		public override void WriteParagraph(StylizedParagraph paragraph) => this.WriteTextTag("p", paragraph, ("class", paragraph.Style));
 
 		public override void WriteStylizedText(string? style, string text)
 		{
@@ -38,7 +38,7 @@
 			}
 		}
 
-		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<Paragraph> paragraphs)
+		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<StylizedParagraph> paragraphs)
 		{
 			var attrs = new List<Attribute> { new("class", style) };
 			if (mergeCount > 1)
@@ -47,9 +47,9 @@
 			}
 
 			this.htmlWriter.OpenTextTag("td", attrs);
-			if (paragraphs is not List<Paragraph> newParas)
+			if (paragraphs is not List<StylizedParagraph> newParas)
 			{
-				newParas = new List<Paragraph>(paragraphs);
+				newParas = new List<StylizedParagraph>(paragraphs);
 			}
 
 			if (newParas.Count == 1)

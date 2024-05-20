@@ -3,19 +3,19 @@
 	using System.Collections;
 	using System.Collections.Generic;
 
-	public sealed class Paragraph(string? style, IEnumerable<StylizedText> text) : IList<StylizedText>
+	public sealed class StylizedParagraph(string? style, IEnumerable<StylizedText> text) : IList<StylizedText>
 	{
 		#region Fields
 		private readonly IList<StylizedText> text = text is IList<StylizedText> listText ? listText : new List<StylizedText>(text);
 		#endregion
 
 		#region Constructors
-		public Paragraph(string? style)
+		public StylizedParagraph(string? style)
 			: this(style, new List<StylizedText>())
 		{
 		}
 
-		public Paragraph(string? style, string text)
+		public StylizedParagraph(string? style, string text)
 			: this(style, new List<StylizedText>() { new(text) })
 		{
 		}
@@ -38,7 +38,7 @@
 		#endregion
 
 		#region Public Static Methds
-		public static Paragraph FromText(string text) => new(null, StylizedText.StylizeLocations(text));
+		public static StylizedParagraph FromText(string text) => new(null, StylizedText.StylizeLocations(text));
 
 		#endregion
 
