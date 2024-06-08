@@ -29,7 +29,7 @@
 			var areaMatch = GeneratedRegexes.AreaFinder().Match(title);
 			if (areaMatch.Success)
 			{
-				this.Area = areaMatch.Groups["area"].Value;
+				this.Area = areaMatch.Groups["area"].Value.Replace(" ", string.Empty, StringComparison.Ordinal);
 				title = title.Remove(areaMatch.Index, areaMatch.Length);
 			}
 			else

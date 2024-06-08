@@ -10,6 +10,7 @@
 		public BG1Dom()
 		{
 			AssassinationAttempts.Register(this);
+			BulletedText.Register(this);
 			Companions.Register(this);
 			Enemies.Register(this);
 			Note.Register(this);
@@ -29,14 +30,23 @@
 				throw new InvalidOperationException("No sections!");
 			}
 
+			var dom = new BG1Dom();
+			var sections = new List<Section>();
 			var i = 0;
+			var introText = string.Empty;
 			while (i < split.Length && !char.IsDigit(split[i][0]))
 			{
+				introText += split[i] + '\n';
 				i++;
 			}
 
-			var dom = new BG1Dom();
-			var sections = new List<Section>();
+			if (introText.Length > 0)
+			{
+				var title = new SectionTitle("0 Intro");
+				var introSection = new BG1Section(title, introText, dom);
+				sections.Add(introSection);
+			}
+
 			while (i < split.Length)
 			{
 				var title = new SectionTitle(split[i]);

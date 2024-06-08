@@ -5,12 +5,21 @@
 	using System.IO;
 	using System.Text;
 
-	internal sealed class BG2Dom : BGDom
+	internal sealed partial class BG2Dom : BGDom
 	{
+		public BG2Dom()
+		{
+			Exposition.Register(this);
+			PlainText.Register(this);
+		}
+
 		public static BG2Dom FromFile(string fileName)
 		{
 			var text = File.ReadAllText(fileName, Encoding.UTF8); // Encoding.GetEncoding(1252)
 			text = HarmonizeText(text);
+			text = GeneratedRegexes.ArrowFixer().Replace(text, "→");
+			text = GeneratedRegexes.LongDashFixer().Replace(text, "${before}—${after}");
+
 			var split = GeneratedRegexes.SectionSplitter().Split(text);
 			if (split.Length < 2)
 			{
@@ -37,7 +46,7 @@
 						break;
 					}
 
-					var section = new BG2Section(title, split[index + 1]);
+					var section = new BG2Section(title, split[index + 1], dom);
 					sections.Add(section);
 				}
 

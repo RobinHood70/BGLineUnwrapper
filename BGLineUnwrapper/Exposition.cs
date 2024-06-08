@@ -2,10 +2,10 @@
 {
 	using System.Collections.Generic;
 
-	internal sealed class PlainText : ITextRegion, ISubsectioned
+	internal sealed class Exposition : ITextRegion, ISubsectioned
 	{
 		#region Public Constants
-		public const string Key = "PlainText";
+		public const string Key = "Exposition";
 		#endregion
 
 		#region Fields
@@ -13,9 +13,10 @@
 		#endregion
 
 		#region Constructors
-		public PlainText(string body)
+		public Exposition(string body)
 		{
-			this.subsections.AddRange(Common.ParseSubsections(body, false));
+			var subs = Common.ParseSubsections(body, true);
+			this.subsections.AddRange(subs);
 		}
 		#endregion
 
@@ -26,14 +27,13 @@
 		#endregion
 
 		#region Public Static Methods
-		public static PlainText Create(string body) => new(body);
+		public static Exposition Create(string body) => new(body);
 
-		// Does not register itself since it should never have a key match.
-		public static void Register(BGDom dom) => _ = dom;
+		public static void Register(BGDom dom) => dom.Register(Key, Create);
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver) => saver.EmitSubsections(null, this.Subsections);
+		public void Save(Saver saver) => saver.EmitSubsections(Key, this.Subsections);
 		#endregion
 	}
 }

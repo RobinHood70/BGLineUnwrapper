@@ -14,7 +14,7 @@
 		public Note(string body)
 		{
 			var trimmed = Common.TrimStart(body);
-			this.notes = new Subsection(null, Common.WrappedLines(trimmed, LineType.Note));
+			this.notes = new Subsection(null, Line.TextToLines(trimmed, LineType.Note));
 		}
 		#endregion
 

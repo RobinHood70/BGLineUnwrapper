@@ -1,6 +1,5 @@
 ﻿namespace BGLineUnwrapper
 {
-	using System;
 	using System.Collections.Generic;
 
 	internal sealed class Companions : ITextRegion
@@ -16,7 +15,7 @@
 		#region Constructors
 		public Companions(string body)
 		{
-			var entries = body.Split(new[] { Common.EntryDelimiter }, StringSplitOptions.None);
+			var entries = GeneratedRegexes.DashedTitleFinder().Split(body);
 			if (entries.Length > 1)
 			{
 				for (var i = 1; i < entries.Length; i++)
