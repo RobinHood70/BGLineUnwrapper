@@ -42,7 +42,7 @@
 
 			if (introText.Length > 0)
 			{
-				var title = new SectionTitle("0 Intro");
+				var title = new SectionTitle("Intro");
 				var introSection = new BG1Section(title, introText, dom);
 				sections.Add(introSection);
 			}
