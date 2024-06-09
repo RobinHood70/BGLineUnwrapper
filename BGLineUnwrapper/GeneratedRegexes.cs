@@ -56,7 +56,7 @@
 		[GeneratedRegex(@"\A(?<name>.*?)\s+(?<str>\d+(/\d+)?)\s+(?<dex>\d+)\s+(?<con>\d+)\s+(?<int>\d+)\s+(?<wis>\d+)\s+(?<cha>\d+)\s+(?<race>.*?)\s{2,}(?<class>.*?)\s+(?<align>.*?)\s*\Z", RegexOptions.ExplicitCapture, Timeout)]
 		public static partial Regex StatParser();
 
-		[GeneratedRegex(@",?(\s+at)?\s*(\(x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))(?<punc>[\p{P}]*)", RegexOptions.ExplicitCapture, Timeout)]
+		[GeneratedRegex(@",?(\s+at)?\s*(\((?<area>[A-Z]{2} ?\d{4},? ?)?x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))(?<punc>[\p{P}]*)", RegexOptions.ExplicitCapture, Timeout)]
 		public static partial Regex TextLocFinder();
 	}
 }
