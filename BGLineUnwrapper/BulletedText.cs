@@ -4,7 +4,7 @@
 	using System.Collections.Generic;
 	using RobinHood70.CommonCode;
 
-	internal sealed class BulletedText : ITextRegion, ISubsectioned
+	internal sealed class BulletedText : Region, ISubsectioned
 	{
 		#region Public Constants
 		public const string Key = "BulletedText";
@@ -49,7 +49,7 @@
 		#region Public Properties
 		public IReadOnlyList<Subsection> Subsections => this.subsections;
 
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 		#endregion
 
 		#region Public Static Methods
@@ -60,7 +60,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver)
+		public override void Save(Saver saver)
 		{
 			foreach (var subsection in this.subsections)
 			{

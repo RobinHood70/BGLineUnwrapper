@@ -2,7 +2,7 @@
 {
 	using System.Collections.Generic;
 
-	internal sealed class PlainText : ITextRegion, ISubsectioned
+	internal sealed class PlainText : Region, ISubsectioned
 	{
 		#region Public Constants
 		public const string Key = "PlainText";
@@ -15,12 +15,12 @@
 		#region Constructors
 		public PlainText(string body)
 		{
-			this.subsections.AddRange(Common.ParseSubsections(body, false));
+			this.subsections.AddRange(this.ParseSubsections(body, false));
 		}
 		#endregion
 
 		#region Public Properties
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 
 		public IReadOnlyList<Subsection> Subsections => this.subsections;
 		#endregion
@@ -33,7 +33,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver) => saver.EmitSubsections(null, this.Subsections);
+		public override void Save(Saver saver) => saver.EmitSubsections(null, this.Subsections);
 		#endregion
 	}
 }

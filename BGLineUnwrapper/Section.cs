@@ -5,8 +5,12 @@
 
 	public abstract class Section(SectionTitle title)
 	{
+		#region Static Fields
+		private static readonly char[] TrimChars = [' ', ',', '.'];
+		#endregion
+
 		#region Public Properties
-		public IDictionary<string, ITextRegion> Regions { get; } = new Dictionary<string, ITextRegion>(StringComparer.Ordinal);
+		public IDictionary<string, Region> Regions { get; } = new Dictionary<string, Region>(StringComparer.Ordinal);
 
 		public SectionTitle Title => title;
 		#endregion
@@ -36,10 +40,14 @@
 		{
 			foreach (var subsection in subsections)
 			{
-				subsection.Title?.TrimAreaName(areaName);
+				if (subsection.Title is not null)
+				{
+					TrimAreaName(subsection.Title, areaName);
+				}
+
 				foreach (var line in subsection.Lines)
 				{
-					line.TrimAreaName(areaName);
+					TrimAreaName(line, areaName);
 				}
 
 				subsection.ReparseLocations();
@@ -65,6 +73,30 @@
 				{
 					// throw new InvalidOperationException("Unrecognized subsection title: " + matches[i]);
 				}
+			}
+		}
+		#endregion
+
+		#region Private Methods
+		private static void TrimAreaName(Line line, string areaName)
+		{
+			if (line.Type is not LineType.Colon and not LineType.Title)
+			{
+				return;
+			}
+
+			if (line.Text.StartsWith(areaName, StringComparison.OrdinalIgnoreCase))
+			{
+				line.Text = line.Text[areaName.Length..].TrimStart(TrimChars);
+			}
+			else if (line.Text.EndsWith(areaName, StringComparison.OrdinalIgnoreCase))
+			{
+				line.Text = line.Text[..^areaName.Length].TrimEnd(TrimChars);
+			}
+			else
+			{
+				var parens = " (" + areaName + ")";
+				line.Text = line.Text.Replace(parens, string.Empty, StringComparison.Ordinal);
 			}
 		}
 		#endregion

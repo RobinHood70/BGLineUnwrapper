@@ -2,7 +2,7 @@
 {
 	using System.Collections.Generic;
 
-	internal sealed class Exposition : ITextRegion, ISubsectioned
+	internal sealed class Exposition : Region, ISubsectioned
 	{
 		#region Public Constants
 		public const string Key = "Exposition";
@@ -15,13 +15,13 @@
 		#region Constructors
 		public Exposition(string body)
 		{
-			var subs = Common.ParseSubsections(body, true);
+			var subs = this.ParseSubsections(body, true);
 			this.subsections.AddRange(subs);
 		}
 		#endregion
 
 		#region Public Properties
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 
 		public IReadOnlyList<Subsection> Subsections => this.subsections;
 		#endregion
@@ -33,7 +33,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver) => saver.EmitSubsections(Key, this.Subsections);
+		public override void Save(Saver saver) => saver.EmitSubsections(Key, this.Subsections);
 		#endregion
 	}
 }

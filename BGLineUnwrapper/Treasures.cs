@@ -5,7 +5,7 @@
 	using System.Globalization;
 	using RobinHood70.CommonCode;
 
-	internal sealed class Treasures : ITextRegion
+	internal sealed class Treasures : Region
 	{
 		#region Public Constants
 		public const string Key = "Treasures";
@@ -38,7 +38,7 @@
 		#endregion
 
 		#region Public Properties
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 		#endregion
 
 		#region Public Static Methods
@@ -48,7 +48,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver)
+		public override void Save(Saver saver)
 		{
 			if (this.treasures.Count == 0)
 			{

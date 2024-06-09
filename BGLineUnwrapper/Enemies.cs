@@ -4,7 +4,7 @@
 	using System.Collections.Generic;
 	using RobinHood70.CommonCode;
 
-	internal sealed class Enemies : ITextRegion
+	internal sealed class Enemies : Region
 	{
 		#region Public Constants
 		public const string Key = "Enemies";
@@ -17,7 +17,7 @@
 		#region Constructors
 		public Enemies(string body)
 		{
-			var lines = Line.TextToLines(Common.TrimStart(body), LineType.Plain);
+			var lines = this.TextToLines(Common.TrimStart(body), LineType.Plain);
 			if (lines.Count != 1)
 			{
 				throw new InvalidOperationException("Malformed Enemies section!");
@@ -29,7 +29,7 @@
 		#endregion
 
 		#region Public Properties
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 		#endregion
 
 		#region Public Static Methods
@@ -39,7 +39,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver)
+		public override void Save(Saver saver)
 		{
 			if (this.enemies.Count == 0)
 			{

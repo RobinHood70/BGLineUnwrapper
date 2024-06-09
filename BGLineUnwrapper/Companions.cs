@@ -2,7 +2,7 @@
 {
 	using System.Collections.Generic;
 
-	internal sealed class Companions : ITextRegion
+	internal sealed class Companions : Region
 	{
 		#region Public Constants
 		public const string Key = "Companions";
@@ -29,7 +29,7 @@
 		#endregion
 
 		#region Public Properties
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 		#endregion
 
 		#region Public Static Methods
@@ -39,7 +39,7 @@
 		#endregion
 
 		#region Public Override Methods
-		public void Save(Saver saver)
+		public override void Save(Saver saver)
 		{
 			if (this.companions.Count == 0)
 			{

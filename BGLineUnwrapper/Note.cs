@@ -1,6 +1,6 @@
 ﻿namespace BGLineUnwrapper
 {
-	internal sealed class Note : ITextRegion
+	internal sealed class Note : Region
 	{
 		#region Public Constants
 		public const string Key = "Note";
@@ -14,12 +14,12 @@
 		public Note(string body)
 		{
 			var trimmed = Common.TrimStart(body);
-			this.notes = new Subsection(null, Line.TextToLines(trimmed, LineType.Note));
+			this.notes = new Subsection(null, this.TextToLines(trimmed, LineType.Note));
 		}
 		#endregion
 
 		#region Public Properties
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 		#endregion
 
 		#region Public Static Methods
@@ -29,7 +29,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver) => saver.EmitSubsection(this.notes);
+		public override void Save(Saver saver) => saver.EmitSubsection(this.notes);
 		#endregion
 	}
 }

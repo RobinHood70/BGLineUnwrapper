@@ -2,7 +2,7 @@
 {
 	using System.Collections.Generic;
 
-	internal sealed class AssassinationAttempts : ITextRegion, ISubsectioned
+	internal sealed class AssassinationAttempts : Region, ISubsectioned
 	{
 		#region Public Constants
 		public const string Key = "Assassination Attempts";
@@ -15,14 +15,14 @@
 		#region Constructors
 		public AssassinationAttempts(string body)
 		{
-			this.subsections.AddRange(Common.ParseSubsections(body, true));
+			this.subsections.AddRange(this.ParseSubsections(body, true));
 		}
 		#endregion
 
 		#region Public Properties
 		public IReadOnlyList<Subsection> Subsections => this.subsections;
 
-		public string InstanceKey => Key;
+		public override string InstanceKey => Key;
 		#endregion
 
 		#region Public Static Methods
@@ -37,7 +37,7 @@
 		#endregion
 
 		#region Public Methods
-		public void Save(Saver saver) => saver.EmitSubsections("Assassination Attempts", this.Subsections);
+		public override void Save(Saver saver) => saver.EmitSubsections("Assassination Attempts", this.Subsections);
 		#endregion
 	}
 }
