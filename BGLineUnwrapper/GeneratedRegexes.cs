@@ -58,5 +58,8 @@
 
 		[GeneratedRegex(@",?(\s+at)?\s*(\((?<area>[A-Z]{2} ?\d{4},? ?)?x +(?<x>\d+),? +y +(?<y>\d+)\)|x +(?<x>\d+),? +y +(?<y>\d+))(?<punc>[\p{P}]*)", RegexOptions.ExplicitCapture, Timeout)]
 		public static partial Regex TextLocFinder();
+
+		[GeneratedRegex(@"\s+", RegexOptions.None, Timeout)]
+		public static partial Regex Whitespace();
 	}
 }

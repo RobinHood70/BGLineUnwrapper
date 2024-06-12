@@ -152,6 +152,8 @@
 				case LineType.Title:
 					this.WriteHeader(3, text);
 					break;
+				default:
+					break;
 			}
 		}
 

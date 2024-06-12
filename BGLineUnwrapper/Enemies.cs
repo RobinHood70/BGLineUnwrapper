@@ -17,7 +17,7 @@
 		#region Constructors
 		public Enemies(string body)
 		{
-			var lines = this.TextToLines(Common.TrimStart(body), LineType.Plain);
+			var lines = this.TextToParagraphs(Common.TrimStart(body), LineType.Plain);
 			if (lines.Count != 1)
 			{
 				throw new InvalidOperationException("Malformed Enemies section!");

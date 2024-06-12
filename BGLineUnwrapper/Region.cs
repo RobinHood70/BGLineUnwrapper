@@ -1,10 +1,7 @@
 ﻿namespace BGLineUnwrapper
 {
-	using System;
 	using System.Collections.Generic;
-	using System.Globalization;
-	using System.Linq;
-	using RobinHood70.CommonCode;
+	using System.Text;
 
 	public delegate Region RegionCreator(string body);
 
@@ -14,9 +11,11 @@
 		private static readonly char[] Colon = [':'];
 		private static readonly SearchEntry[] SearchStrings =
 		[
-			new SearchEntry(":[", 1, LineType.Colon),
-			new SearchEntry(": ", 2, LineType.Colon),
-			new SearchEntry("--", 2, LineType.Dashed)
+			new SearchEntry("Note:", 5, LineType.Note, true),
+			new SearchEntry("Tip:", 4, LineType.Tip, true),
+			new SearchEntry(":[", 1, LineType.Colon, false),
+			new SearchEntry(": ", 2, LineType.Colon, false),
+			new SearchEntry("--", 2, LineType.Dashed, false),
 		];
 		#endregion
 
@@ -25,7 +24,7 @@
 		#endregion
 
 		#region Public Methods
-		public IReadOnlyList<Line> TextToLines(IEnumerable<string> lines, LineType lineType)
+		public IReadOnlyList<Line> TextToParagraphs(IEnumerable<string> lines, LineType lineType)
 		{
 			var retval = new List<Line>();
 			var sectionLines = new List<string>();
@@ -37,7 +36,7 @@
 				}
 				else
 				{
-					var newLines = this.GetLineTypes(sectionLines, lineType);
+					var newLines = this.TextToLines(sectionLines, lineType);
 					retval.AddRange(newLines);
 					sectionLines = [];
 				}
@@ -45,7 +44,7 @@
 
 			if (sectionLines.Count > 0)
 			{
-				var newLines = this.GetLineTypes(sectionLines, lineType);
+				var newLines = this.TextToLines(sectionLines, lineType);
 				retval.AddRange(newLines);
 			}
 
@@ -58,82 +57,85 @@
 		#endregion
 
 		#region Protected Virtual Methods
-		protected virtual Line? CheckValidLine(LineType lineType, string prefix, string newText)
+		protected virtual IReadOnlyList<Line> TextToLines(IEnumerable<string> textLines, LineType preferredType)
 		{
-			// Checks if line text looks valid. Rejects it if prefix is abnormally long or contains a period. Skips check if the new text contains a '[', suggesting that it's a line with a location attached.
-			if (prefix.Contains('.', StringComparison.Ordinal))
-			{
-				// Debug.WriteLine("Excluded for period: " + prefix);
-				return null;
-			}
-
-			prefix = prefix.UpperFirst(CultureInfo.CurrentCulture);
-			var wordCount = prefix.Split(' ').Length;
-			if (wordCount > 4)
-			{
-				// Debug.WriteLine("Excluded for word count: " + prefix);
-				return null;
-			}
-
-			switch (prefix)
-			{
-				case "Note":
-					lineType = LineType.Note;
-					break;
-				case "Tip":
-					lineType = LineType.Tip;
-					break;
-			}
-
-			if (lineType == LineType.Colon)
-			{
-				if (!newText.Contains('[', StringComparison.Ordinal))
-				{
-					// Debug.WriteLine("Excluded for no location: " + newText);
-					return null;
-				}
-
-				if (newText.EndsWith("].", StringComparison.Ordinal))
-				{
-					newText = newText[0..^1];
-				}
-			}
-
-			return new Line(lineType, prefix, newText);
-		}
-
-		protected virtual IList<Line> GetLineTypes(IReadOnlyList<string> lines, LineType preferredType)
-		{
-			if (lines.Count == 0)
-			{
-				return [];
-			}
-
 			var retval = new List<Line>();
-			var (body, tail) = this.SplitLines(lines);
-			if (body.Count > 0)
+			var sb = new StringBuilder(160);
+			string? prefix = null;
+			var lineType = preferredType;
+			foreach (var textLine in textLines)
 			{
-				var text = string.Join(' ', body);
-				var lineType = preferredType;
-				if (preferredType == LineType.Plain && text.Split(Colon, 2) is var textSplit && textSplit.Length == 2)
+				var text = textLine;
+				foreach (var entry in SearchStrings)
 				{
-					switch (textSplit[0])
+					var split = textLine.Split(entry.Search, 2);
+					if (split.Length > 1 && (split[0].Length == 0 || !entry.LineStart))
 					{
-						case "Note":
-							lineType = LineType.Note;
-							text = textSplit[1].TrimStart();
-							break;
-						case "Tip":
-							lineType = LineType.Tip;
-							text = textSplit[1].TrimStart();
-							break;
+						if (sb.Length > 0)
+						{
+							retval.Add(new Line(preferredType, prefix, sb.ToString()));
+							sb.Clear();
+						}
+
+						if (entry.LineStart)
+						{
+							// At least so far, search types that are at the start of the line are multi-line, so alter the data as needed and continue into the normal loop.
+							lineType = entry.LineType;
+							prefix = entry.Search.TrimEnd(Colon);
+							text = split[1].TrimStart();
+						}
+						else
+						{
+							retval.Add(new Line(entry.LineType, split[0], split[1]));
+							lineType = preferredType;
+							prefix = null;
+							text = null;
+						}
+
+						break;
 					}
 				}
 
-				retval.Add(new Line(lineType, text));
+				if (text is not null)
+				{
+					// No specific line type was added, so assume it's a normal line.
+					if (sb.Length != 0)
+					{
+						sb.Append(' ');
+					}
+
+					sb.Append(text);
+				}
+
+				/*
+				var wordCount = GeneratedRegexes.Whitespace().Count(prefix) + 1;
+				if (!prefix.Contains('.', StringComparison.Ordinal) && wordCount < 5)
+				{
+				if (lineType == LineType.Colon)
+				{
+					if (!newText.Contains('[', StringComparison.Ordinal))
+					{
+						// Debug.WriteLine("Excluded for no location: " + newText);
+						return null;
+					}
+
+					if (newText.EndsWith("].", StringComparison.Ordinal))
+					{
+						newText = newText[0..^1];
+					}
+				}
+
+				if (line != null)
+				{
+					retval.Add(line);
+				}*/
 			}
 
-			retval.AddRange(tail);
+			if (sb.Length != 0)
+			{
+				retval.Add(new Line(lineType, prefix, sb.ToString()));
+			}
+
 			return retval;
 		}
 
@@ -159,50 +161,12 @@
 					trimmed.RemoveAt(0);
 				}
 
-				var wrapped = this.TextToLines(trimmed, LineType.Plain);
+				var wrapped = this.TextToParagraphs(trimmed, LineType.Plain);
 				var subsection = new Subsection(title, wrapped);
 				retval.Add(subsection);
 			}
 
 			return retval;
-		}
-
-		protected virtual (List<string>, List<Line>) SplitLines(IReadOnlyList<string> lines)
-		{
-			var tail = new List<Line>();
-			var singleLines = lines.Count - 1;
-			Line? line;
-			do
-			{
-				line = null;
-				var text = lines[singleLines];
-				if (char.IsLower(text[0]))
-				{
-					// If text starts with a lower-case letter, assume it's part of the previous line.
-					continue;
-				}
-
-				foreach (var entry in SearchStrings)
-				{
-					// There cannot be more than one search entry found, so using a naive IndexOf loop as opposed to trying to ensure we have the earliest occurrence of any of them.
-					var specialOffset = text.IndexOf(entry.Search, StringComparison.Ordinal);
-					if (specialOffset != -1)
-					{
-						line = this.CheckValidLine(entry.LineType, text[..specialOffset], text[(specialOffset + entry.Offset)..].TrimStart());
-						if (line != null)
-						{
-							tail.Add(line);
-							singleLines--;
-						}
-					}
-				}
-			}
-			while (singleLines >= 0 && line != null);
-
-			var body = new List<string>(lines.Take(singleLines + 1));
-			tail.Reverse();
-
-			return (body, tail);
 		}
 		#endregion
 

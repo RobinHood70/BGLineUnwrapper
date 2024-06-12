@@ -30,7 +30,7 @@
 		#endregion
 
 		#region Public Override Methods
-		public override string ToString() => (this.Prefix == null ? string.Empty : this.Prefix + ": ") + this.Text;
+		public override string ToString() => (this.Prefix is null ? string.Empty : this.Prefix + ": ") + this.Text;
 		#endregion
 	}
 }

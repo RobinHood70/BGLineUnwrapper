@@ -1,6 +1,6 @@
 ﻿namespace BGLineUnwrapper
 {
-	public class Attribute(string? key, string? value)
+	public class HtmlAttrib(string? key, string? value)
 	{
 		#region Public Properties
 		public string? Key => key;
@@ -15,7 +15,7 @@
 		#endregion
 
 		#region Implicit Operators
-		public static implicit operator Attribute((string? Key, string? Value) value) => new(value.Key, value.Value);
+		public static implicit operator HtmlAttrib((string? Key, string? Value) value) => new(value.Key, value.Value);
 		#endregion
 	}
 }

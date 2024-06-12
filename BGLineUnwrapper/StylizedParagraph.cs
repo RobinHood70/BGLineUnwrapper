@@ -6,17 +6,17 @@
 	public sealed class StylizedParagraph(string? style, IEnumerable<StylizedText> text) : IList<StylizedText>
 	{
 		#region Fields
-		private readonly IList<StylizedText> text = text is IList<StylizedText> listText ? listText : new List<StylizedText>(text);
+		private readonly IList<StylizedText> text = new List<StylizedText>(text);
 		#endregion
 
 		#region Constructors
 		public StylizedParagraph(string? style)
-			: this(style, new List<StylizedText>())
+			: this(style, [])
 		{
 		}
 
 		public StylizedParagraph(string? style, string text)
-			: this(style, new List<StylizedText>() { new(text) })
+			: this(style, [new(text)])
 		{
 		}
 		#endregion

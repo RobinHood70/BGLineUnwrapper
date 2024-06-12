@@ -40,7 +40,7 @@
 
 		public override void WriteTableCell(string? style, int mergeCount, IEnumerable<StylizedParagraph> paragraphs)
 		{
-			var attrs = new List<Attribute> { new("class", style) };
+			var attrs = new List<HtmlAttrib> { new("class", style) };
 			if (mergeCount > 1)
 			{
 				attrs.Add(("colspan", mergeCount.ToStringInvariant()));
@@ -87,7 +87,7 @@
 
 		public override void WriteTableStart(string type, int percentWidth)
 		{
-			var attributes = new List<Attribute>()
+			var attributes = new List<HtmlAttrib>()
 			{
 				("class", type)
 			};
@@ -131,7 +131,7 @@
 		#endregion
 
 		#region Private Methods
-		private void WriteTextTag(string tag, IEnumerable<StylizedText> text, params Attribute[] attributes)
+		private void WriteTextTag(string tag, IEnumerable<StylizedText> text, params HtmlAttrib[] attributes)
 		{
 			this.htmlWriter.OpenTextTag(tag, attributes);
 			this.WriteStylizedText(text);

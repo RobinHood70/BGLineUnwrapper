@@ -50,7 +50,7 @@
 		#region Private Methods
 		private bool MoveLocation(Line? line, int lineNum, Line searchLine)
 		{
-			if (line != null && searchLine.Prefix != null)
+			if (line is not null && searchLine.Prefix is not null)
 			{
 				var index = line.Text.IndexOf(searchLine.Prefix, StringComparison.OrdinalIgnoreCase);
 				if (index > -1)

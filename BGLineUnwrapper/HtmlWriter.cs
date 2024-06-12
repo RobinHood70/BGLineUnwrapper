@@ -76,28 +76,28 @@
 
 		public HtmlWriter OpenTag(string name) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, null);
 
-		public HtmlWriter OpenTag(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, attributes);
+		public HtmlWriter OpenTag(string name, params HtmlAttrib[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter, attributes);
 
-		public HtmlWriter OpenTagInline(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.None, attributes);
+		public HtmlWriter OpenTagInline(string name, params HtmlAttrib[] attributes) => this.FullTag(name, TagProperties.None, attributes);
 
-		public HtmlWriter OpenTextTag(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.Indent, attributes);
+		public HtmlWriter OpenTextTag(string name, params HtmlAttrib[] attributes) => this.FullTag(name, TagProperties.Indent, attributes);
 
-		public HtmlWriter OpenTextTag(string name, IEnumerable<Attribute> attributes) => this.FullTag(name, TagProperties.Indent, attributes);
+		public HtmlWriter OpenTextTag(string name, IEnumerable<HtmlAttrib> attributes) => this.FullTag(name, TagProperties.Indent, attributes);
 
 		public HtmlWriter SelfClosingTagInline(string name) => this.FullTag(name, TagProperties.SelfClose, null);
 
-		public HtmlWriter SelfClosingTagInline(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.SelfClose, attributes);
+		public HtmlWriter SelfClosingTagInline(string name, params HtmlAttrib[] attributes) => this.FullTag(name, TagProperties.SelfClose, attributes);
 
 		public HtmlWriter SelfClosingTag(string name) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, null);
 
-		public HtmlWriter SelfClosingTag(string name, params Attribute[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, attributes);
+		public HtmlWriter SelfClosingTag(string name, params HtmlAttrib[] attributes) => this.FullTag(name, TagProperties.Indent | TagProperties.NewLineAfter | TagProperties.SelfClose, attributes);
 
-		public HtmlWriter TextTag(string name, string content, params Attribute[] attributes) => this
+		public HtmlWriter TextTag(string name, string content, params HtmlAttrib[] attributes) => this
 			.OpenTextTag(name, attributes)
 			.WriteText(content)
 			.CloseTag();
 
-		public HtmlWriter TextTagInline(string name, string content, params Attribute[] attributes) => this
+		public HtmlWriter TextTagInline(string name, string content, params HtmlAttrib[] attributes) => this
 			.OpenTagInline(name, attributes)
 			.WriteText(content)
 			.CloseTag();
@@ -150,7 +150,7 @@
 			(this.DefaultNamespace == null || text.Contains(':', StringComparison.Ordinal)) ? text :
 			this.DefaultNamespace + ':' + text;
 
-		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<Attribute>? attributes)
+		private HtmlWriter FullTag(string tag, TagProperties props, IEnumerable<HtmlAttrib>? attributes)
 		{
 			var hierarchical = false;
 			if (props.HasFlag(TagProperties.Indent))
