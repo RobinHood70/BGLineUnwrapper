@@ -166,7 +166,7 @@
 				retval.Add(subsection);
 			}
 
-			return retval;
+			return retval.AsReadOnly();
 		}
 		#endregion
 

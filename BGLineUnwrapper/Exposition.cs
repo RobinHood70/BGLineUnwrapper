@@ -8,22 +8,17 @@
 		public const string Key = "Exposition";
 		#endregion
 
-		#region Fields
-		private readonly List<Subsection> subsections = [];
-		#endregion
-
 		#region Constructors
 		public Exposition(string body)
 		{
-			var subs = this.ParseSubsections(body, true);
-			this.subsections.AddRange(subs);
+			this.Subsections = this.ParseSubsections(body, true);
 		}
 		#endregion
 
 		#region Public Properties
 		public override string InstanceKey => Key;
 
-		public IReadOnlyList<Subsection> Subsections => this.subsections;
+		public IReadOnlyList<Subsection> Subsections { get; }
 		#endregion
 
 		#region Public Static Methods

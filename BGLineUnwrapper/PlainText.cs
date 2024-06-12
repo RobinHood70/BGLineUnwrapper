@@ -8,21 +8,17 @@
 		public const string Key = "PlainText";
 		#endregion
 
-		#region Fields
-		private readonly List<Subsection> subsections = [];
-		#endregion
-
 		#region Constructors
 		public PlainText(string body)
 		{
-			this.subsections.AddRange(this.ParseSubsections(body, false));
+			this.Subsections = this.ParseSubsections(body, false);
 		}
 		#endregion
 
 		#region Public Properties
 		public override string InstanceKey => Key;
 
-		public IReadOnlyList<Subsection> Subsections => this.subsections;
+		public IReadOnlyList<Subsection> Subsections { get; }
 		#endregion
 
 		#region Public Static Methods

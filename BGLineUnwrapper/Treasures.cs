@@ -22,10 +22,6 @@
 		#region Constructors
 		public Treasures(string body)
 		{
-			if (body.Contains("Star Sapphire"))
-			{
-			}
-
 			var lines = Common.TrimStart(body);
 			foreach (var line in lines)
 			{

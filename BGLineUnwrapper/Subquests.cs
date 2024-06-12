@@ -8,19 +8,15 @@
 		public const string Key = "Subquests";
 		#endregion
 
-		#region Fields
-		private readonly List<Subsection> subsections = [];
-		#endregion
-
 		#region Constructors
 		public Subquests(string body)
 		{
-			this.subsections.AddRange(this.ParseSubsections(body, true));
+			this.Subsections = this.ParseSubsections(body, true);
 		}
 		#endregion
 
 		#region Public Properties
-		public IReadOnlyList<Subsection> Subsections => this.subsections;
+		public IReadOnlyList<Subsection> Subsections { get; }
 
 		public override string InstanceKey => Key;
 		#endregion

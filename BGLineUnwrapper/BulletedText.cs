@@ -10,10 +10,6 @@
 		public const string Key = "BulletedText";
 		#endregion
 
-		#region Fields
-		private readonly List<Subsection> subsections = [];
-		#endregion
-
 		#region Constructors
 		public BulletedText(string body)
 		{
@@ -24,6 +20,7 @@
 			}
 
 			// This slightly odd loop construct handles both untitled text as well as titled within the same loop.
+			var subsections = new List<Subsection>();
 			for (var i = -1; i < textSections.Length; i += 2)
 			{
 				Line? title = null;
@@ -41,13 +38,15 @@
 					}
 				}
 
-				this.subsections.Add(new Subsection(title, lines));
+				subsections.Add(new Subsection(title, lines));
 			}
+
+			this.Subsections = subsections.AsReadOnly();
 		}
 		#endregion
 
 		#region Public Properties
-		public IReadOnlyList<Subsection> Subsections => this.subsections;
+		public IReadOnlyList<Subsection> Subsections { get; }
 
 		public override string InstanceKey => Key;
 		#endregion
@@ -62,7 +61,7 @@
 		#region Public Methods
 		public override void Save(Saver saver)
 		{
-			foreach (var subsection in this.subsections)
+			foreach (var subsection in this.Subsections)
 			{
 				if (subsection.Title != null)
 				{
