@@ -8,10 +8,6 @@
 		public const string Key = "Other";
 		#endregion
 
-		#region Fields
-		private readonly List<Subsection> subsections = [];
-		#endregion
-
 		#region Constructors
 		public Other(string body)
 		{
@@ -32,7 +28,7 @@
 		#endregion
 
 		#region Public Methods
-		public override void Save(Saver saver) => saver.EmitSubsections(Key, this.subsections);
+		public override void Save(Saver saver) => saver.EmitSubsections(Key, this.Subsections);
 		#endregion
 	}
 }
